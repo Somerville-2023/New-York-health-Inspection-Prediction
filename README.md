@@ -10,11 +10,13 @@ Does type of restaruant coorelate to neighboorhood demogrphic?
 Is there a specefic type of cuisine that tends to fail inspection more often?
 
 Do demographics effect ratings of specific restaurants? Inception of specefic restaurnatns?
-- Can compate across cities.
+- Can compare across cities.
 
 Do certain demogrphics inflate restuarant ratings?
 
 Does age of restarutant effect health inspection rating?
+
+Which customer groups give the highest/lowest review scores?
 
 
 ## Scope of Project 
