@@ -16,6 +16,8 @@ Do certain demogrphics inflate restuarant ratings?
 
 Does age of restarutant effect health inspection rating?
 
+Which customer groups give the highest/lowest review scores?
+
 
 ## Scope of Project 
 
