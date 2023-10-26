@@ -3,13 +3,14 @@ import numpy as np
 import os
 import requests
 import datetime
+import env
 
 def get_data(year, app_token, max_observations=None):
     # Define the base API URL
     base_url = 'https://data.cityofnewyork.us/resource/h9gi-nx95.json'
 
     # Check if a CSV file with the specified year already exists
-    csv_filename = f'nyc_inspections_{year}.csv'
+    csv_filename = f'nyc_collisions_{year}.csv'
     if os.path.isfile(csv_filename):
         print(f"CSV file for {year} already exists. Loading data from the CSV.")
         df = pd.read_csv(csv_filename)
