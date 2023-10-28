@@ -3,7 +3,14 @@ This document is to share information as we go. Place questions and observations
 Marc 
 =================================================================================================================================================================
 - The new york dataset needs to be cleaned and data should reflect active establishments.
-- The API for Yelp...
+
+- The API for Yelp is very specific about restriction to ensure handling of data is fair, 
+  we have followed through with contacting representatives and lawyers to ensure data retrieval 
+  conditions were being adhered to appropriately.
+
+- This will be a two step way of acquistion due to the first retrieving the Business Ids and then
+  cross referencing open data source for new york businesses and then matching id's to only 
+  retrieve the reviews for the ids in our prepared dataframe.
 
 
 
@@ -15,3 +22,5 @@ Resource links:
 * https://data.cityofnewyork.us/Health/DOHMH-New-York-City-Restaurant-Inspection-Results/43nn-pn8j
 * https://dev.socrata.com/foundry/data.cityofnewyork.us/43nn-pn8j
 * https://fusion.yelp.com/
+* https://docs.developer.yelp.com/docs/fusion-rate-limiting
+* https://www.youtube.com/watch?v=fklHBWow8vE&ab_channel=StrataScratch
