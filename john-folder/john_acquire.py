@@ -181,6 +181,3 @@ def main(inspections_df, g_places_api_key, save_interval=10):
     pd.DataFrame(places_results).to_csv('places_final.csv', index=False)
     pd.DataFrame(reviews_results).to_csv('reviews_final.csv', index=False)
     pd.DataFrame(api_logs).to_csv('api_log_final.csv', index=False)
-
-
-is this correct?
