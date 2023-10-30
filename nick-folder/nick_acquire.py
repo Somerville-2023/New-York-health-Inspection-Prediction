@@ -2,6 +2,7 @@ import os
 import pandas as pd
 from env import key_token
 
+
 def acquire_ny():
     filename = 'ny.csv'  # File name
     if os.path.isfile(filename):  # Checks for local file
