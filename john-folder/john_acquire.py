@@ -151,7 +151,7 @@ def main(inspections_df, g_places_api_key, save_interval=10):
 
     current_row = 0
 
-    for index, row in inspections_df.iterrows():
+    for index, row in inspections_df.iloc[35:45].iterrows():
         current_row += 1
         text_query = construct_text_query(row)
 
