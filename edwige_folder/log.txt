@@ -1,0 +1,21 @@
+pip install census
+-api access to census data
+- A simple wrapper for the United States Census Bureau’s API.
+https://pypi.org/project/census/
+
+census api key
+https://api.census.gov/data/key_signup.html
+
+pip install us
+- A package for easily working with US and state metadata.
+https://pypi.org/project/us/
+
+
+Census location data dictionary
+https://api.census.gov/data/2018/acs/acs5/profile/geography.html
+
+Census API example output
+https://api.census.gov/data/2018/acs/acs5/profile/variables/DP05_0001E.json
+
+Census API Data dictionary
+https://api.census.gov/data.html

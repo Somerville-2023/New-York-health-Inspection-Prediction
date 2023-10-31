@@ -1,0 +1,8 @@
+1.
+pip install census
+
+2.
+pip install us
+
+3.
+get census api key
