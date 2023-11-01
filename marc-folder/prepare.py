@@ -118,4 +118,6 @@ def clean_ny(ny):
 
     ny = ny.dropna()  # Drops all remaining null values
 
+    ny = ny.reset_index(drop=True)  # Reset the index and drop the old index
+
     return ny  # Return clean dataframe
