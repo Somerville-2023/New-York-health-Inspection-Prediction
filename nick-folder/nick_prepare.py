@@ -1,18 +1,33 @@
 import pandas as pd
 import numpy as np
+import re
+import nick_acquire as a
 
 
 def remove_columns(ny, trash_columns=['bin', 'bbl', 'nta', 'census_tract', 'council_district', 'community_board',
-                                      'grade_date', 'critical_flag', 'inspection_type']):
+                                      'grade_date', 'critical_flag', 'inspection_type', 'record_date']):
     ny = ny.drop(columns=trash_columns)
     return ny
 
 
-def clean_phones(ny):
-    # Clean phone numbers by removing non-digit characters and dropping nulls
-    ny.phone = ny.phone.str.replace(' ', '')
-    ny.phone = ny.phone.str.replace('_', '')
+def clean_phones(data):
+    ny = data.copy()
+
     ny = ny[ny.phone.notna()]
+
+    new_phone = []
+
+    for phone in ny.phone:
+        new_phone.append(re.sub(r'\D', '', phone))
+    ny.phone = new_phone
+
+    newer_phones = [phone if len(phone) > 1 else '0' for phone in ny.phone]
+
+    ny.phone = newer_phones
+
+    ny['phone'] = pd.to_numeric(ny['phone'], errors='coerce')
+    # Convert it to an integer
+    ny['phone'] = ny['phone'].astype(int)
     return ny
 
 
@@ -35,13 +50,13 @@ def clean_scores(data):
     ny = ny[ny.inspection_date != '1900-01-01T00:00:00.000']  # Remove all values with no inspections done
 
     # Create a new list of scores that replaces null scores for no violation for 0s
-    new_scores = []  # Empty list
-    for score, rep in zip(ny.score, ny.action.str.contains('No violation')):  # Loop through 2 iterable values
-        if rep:  # If no violation, append score 0
-            new_scores.append(0)
-        else:  # Else keep score the same
-            new_scores.append(score)
-    ny.score = new_scores
+    # new_scores = []  # Empty list
+    # for score, rep in zip(ny.score, ny.action.str.contains('No violation')):  # Loop through 2 iterable values
+    #    if rep:  # If no violation, append score 0
+    #        new_scores.append(0)
+    #    else:  # Else keep score the same
+    #        new_scores.append(score)
+    # ny.score = new_scores
 
     ny = ny[ny.score.notna()]
 
@@ -99,6 +114,14 @@ def clean_violations(data):
     return ny  # Return data
 
 
+def combine_address(ny):
+    """This function combines the addresses of the restaurants into one single feature."""
+    full_addy = ny.building + ' ' + ny.street + ' ' + ny.zipcode.astype(str)  # Concat the address together
+    ny['full_address'] = full_addy  # Create new feature
+    ny = ny.drop(columns=['building', 'street', 'zipcode'])  # Drop old features
+    return ny  # Return df
+
+
 def clean_ny(ny):
     """This function just takes in all other cleaning functions for ny data and cleans each element of it"""
 
@@ -120,15 +143,11 @@ def clean_ny(ny):
 
     ny = ny.dropna()  # Drops all remaining null values
 
+    ny = combine_address(ny)
+
+    ny = ny.reset_index(drop=True)
+
     return ny  # Return clean dataframe
-
-
-def combine_address(ny):
-    """This function combines the addresses of the restaurants into one single feature."""
-    full_addy = ny.building + ' ' + ny.street + ' ' + ny.zipcode.astype(str)  # Concat the address together
-    ny['full_address'] = full_addy  # Create new feature
-    ny = ny.drop(columns=['building', 'street', 'zipcode'])  # Drop old features
-    return ny  # Return df
 
 
 def aggregate_violations(ny):
@@ -155,3 +174,56 @@ def aggregate_violations(ny):
     ny2['violation_description'] = agg_data_description
 
     return ny2
+
+
+def clean_code(ny):
+    clean_codes = []
+    clean_description = []
+
+    for row1, row2 in zip(ny.violation_code, ny.violation_description):
+
+        code_list1 = row1
+        code_list2 = row2
+
+        if len(code_list1) > 1 and 'No violation' in code_list1:
+            code_list1.remove('No violation')
+            clean_codes.append(code_list1)
+        else:
+            clean_codes.append(code_list1)
+
+        if len(code_list2) > 1 and 'No violation' in code_list2:
+            code_list2.remove('No violation')
+            clean_description.append(code_list2)
+        else:
+            clean_description.append(code_list2)
+
+    ny.violation_code = clean_codes
+    ny.violation_description = clean_description
+
+    return ny
+
+
+def join_lists(ny):
+    joined_code = []
+    joined_description = []
+
+    for row in ny.violation_code:
+        joined_code.append(' '.join(row))
+
+    for row in ny.violation_description:
+        joined_description.append(' '.join(row))
+
+    ny.violation_code = joined_code
+    ny.violation_description = joined_description
+
+    return ny
+
+
+def final_ny():
+    ny = a.acquire_ny()
+    ny = clean_ny(ny)
+
+    ny = aggregate_violations(ny)
+    ny = clean_code(ny)
+    ny = join_lists(ny)
+    return ny
