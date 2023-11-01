@@ -1,7 +1,6 @@
 import os
 import pandas as pd
-from env import key_token
-
+import env 
 
 def acquire_ny():
     filename = 'ny.csv'  # File name

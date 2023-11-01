@@ -3,7 +3,7 @@ import numpy as np
 
 
 def remove_columns(ny, trash_columns=['bin', 'bbl', 'nta', 'census_tract', 'council_district', 'community_board',
-                                      'grade_date']):
+                                      'grade_date', 'critical_flag', 'inspection_type']):
     ny = ny.drop(columns=trash_columns)
     return ny
 
