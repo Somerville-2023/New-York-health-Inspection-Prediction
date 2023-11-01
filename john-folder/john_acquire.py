@@ -66,13 +66,23 @@ import requests
 
 
 def construct_text_query(row):
-    text_query = f"{row['dba']} {row['building']} {row['street']} {row['boro']}"
+<<<<<<< HEAD
+    
+    text_query = f"{row['dba']} {row['full_address']} {row['boro']} {row['phone']}"
+    
+    # text_query = f"{row['dba']} {row['building']} {row['street']} {row['boro']}"
     if pd.notnull(row['zipcode']):
         text_query += f" {int(row['zipcode'])}"
+=======
+    text_query = f"{row['dba']} {row['full_address']} {row['boro']}"
+    # text_query = f"{row['dba']} {row['building']} {row['street']} {row['boro']}"
+    # if pd.notnull(row['zipcode']):
+    #     text_query += f" {int(row['zipcode'])}"
+>>>>>>> fc161b8682bf772abd515ae988d8fa29a9a45a69
     if pd.notnull(row['phone']):
         text_query += f" {row['phone']}"
-    if pd.notnull(row['cuisine_description']):
-        text_query += f" {row['cuisine_description']}"
+    # if pd.notnull(row['cuisine_description']):
+    #     text_query += f" {row['cuisine_description']}"
     return text_query
 
 def process_place(place, row, places_results, reviews_results):
@@ -95,7 +105,10 @@ def process_place(place, row, places_results, reviews_results):
     if note == '':
         for review in place.get('reviews', []):
             review_id = review.get('name', '').split('/')[-1]
-            contributor_id = review.get('authorAttribution', {}).get('uri', '').split('/')[-2]
+            try:
+                contributor_id = review.get('authorAttribution', {}).get('uri', '').split('/')[-2]
+            except:
+                contributor_id = "unknown"
             reviews_results.append({
                 'camis': row['camis'],
                 'place_id': place.get('id', ''),
@@ -129,10 +142,15 @@ def log_api_call(current_row, text_query, response, places_data, api_logs):
             'note': note
         })
 
+# def save_progress(places_results, reviews_results, api_logs):
+#     pd.DataFrame(places_results).to_csv('places_progress.csv', index=False)
+#     pd.DataFrame(reviews_results).to_csv('reviews_progress.csv', index=False)
+#     pd.DataFrame(api_logs).to_csv('api_log_progress.csv', index=False)
 def save_progress(places_results, reviews_results, api_logs):
-    pd.DataFrame(places_results).to_csv('places_progress.csv', index=False)
-    pd.DataFrame(reviews_results).to_csv('reviews_progress.csv', index=False)
-    pd.DataFrame(api_logs).to_csv('api_log_progress.csv', index=False)
+    pd.DataFrame(places_results).to_csv('places_progress.csv', mode='a', header=False, index=False)
+    pd.DataFrame(reviews_results).to_csv('reviews_progress.csv', mode='a', header=False, index=False)
+    pd.DataFrame(api_logs).to_csv('api_log_progress.csv', mode='a', header=False, index=False)
+
 
 
 def main(inspections_df, g_places_api_key, save_interval=10):
@@ -148,11 +166,32 @@ def main(inspections_df, g_places_api_key, save_interval=10):
         'X-Goog-Api-Key': g_places_api_key,
         'X-Goog-FieldMask': 'places.id,places.displayName,places.formattedAddress,places.reviews'
     }
+    # Check if there is saved progress
+    try:
+        csv_row = pd.read_csv('api_log_progress.csv')
+        last_row_processed = csv_row.tail(1).row_number.iloc[0]
+        print(f"Resuming from row: {last_row_processed + 1}")
+    except FileNotFoundError:
+        last_row_processed = -1
 
+    # Initialize empty lists for the first run
+    if not os.path.isfile('places_progress.csv'):
+        pd.DataFrame(columns=['camis', 'place_id', 'display_name', 'formatted_address', 'note']).to_csv('places_progress.csv', index=False)
+    if not os.path.isfile('reviews_progress.csv'):
+        pd.DataFrame(columns=['camis', 'place_id', 'review_id', 'review_relative_time', 'review_rating', 'review_text', 'review_language', 'author_display_name', 'contributor_id', 'author_photo_uri', 'publish_time']).to_csv('reviews_progress.csv', index=False)
+    if not os.path.isfile('api_log_progress.csv'):
+        pd.DataFrame(columns=['row_number', 'query', 'status_code', 'display_name', 'formatted_address', 'note']).to_csv('api_log_progress.csv', index=False)
+
+    
     current_row = 0
 
-    for index, row in inspections_df.iloc[35:45].iterrows():
+    for index, row in inspections_df.iterrows():
         current_row += 1
+        
+        # Skip already processed rows
+        if current_row <= last_row_processed:
+            continue
+        
         text_query = construct_text_query(row)
 
         # Define the query
@@ -176,7 +215,12 @@ def main(inspections_df, g_places_api_key, save_interval=10):
         # Save progress at regular intervals
         if current_row % save_interval == 0:
             save_progress(places_results, reviews_results, api_logs)
-
+            # Clear the lists after saving
+            places_results.clear()
+            reviews_results.clear()
+            api_logs.clear()
+            print(f'saved progress, row #{current_row}')
+            
     # Save the final results
     pd.DataFrame(places_results).to_csv('places_final.csv', index=False)
     pd.DataFrame(reviews_results).to_csv('reviews_final.csv', index=False)
