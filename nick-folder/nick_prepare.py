@@ -44,6 +44,8 @@ def clean_scores(data):
     ny.score = new_scores
 
     ny = ny[ny.score.notna()]
+
+    ny.score = ny.score.astype(int)
     return ny
 
 
@@ -119,3 +121,37 @@ def clean_ny(ny):
     ny = ny.dropna()  # Drops all remaining null values
 
     return ny  # Return clean dataframe
+
+
+def combine_address(ny):
+    """This function combines the addresses of the restaurants into one single feature."""
+    full_addy = ny.building + ' ' + ny.street + ' ' + ny.zipcode.astype(str)  # Concat the address together
+    ny['full_address'] = full_addy  # Create new feature
+    ny = ny.drop(columns=['building', 'street', 'zipcode'])  # Drop old features
+    return ny  # Return df
+
+
+def aggregate_violations(ny):
+    """This function will aggregate all rows for each inspection for each restaurant into on row by combining the
+       violations."""
+    # Create aggregated df indexed by camis and inspection_date
+    agg_violations = ny.groupby(['camis', 'inspection_date']).agg({'violation_code': lambda x: x.tolist(),
+                                                                   'violation_description': lambda x: x.tolist()})
+    # Create separate df without code & description
+    ny2 = ny.drop(columns=['violation_code', 'violation_description']).copy()
+    ny2 = ny2.drop_duplicates()  # Drop duplicates
+
+    # Create empty lists
+    agg_data_code = []
+    agg_data_description = []
+
+    # Loop through df without duplicates and create lists of aggregated violations
+    for cam, date in zip(ny2.camis, ny2.inspection_date):
+        agg_data_code.append(agg_violations.loc[(cam, date)][0])
+        agg_data_description.append(agg_violations.loc[(cam, date)][1])
+
+    # Insert new, aggregated violations into df
+    ny2['violation_code'] = agg_data_code
+    ny2['violation_description'] = agg_data_description
+
+    return ny2
