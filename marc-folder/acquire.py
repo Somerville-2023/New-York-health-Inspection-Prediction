@@ -1,6 +1,6 @@
 import os
 import pandas as pd
-import env 
+from env import key_token
 
 def acquire_ny():
     filename = 'ny.csv'  # File name
@@ -10,7 +10,7 @@ def acquire_ny():
         from sodapy import Socrata
         # Create client
         # NOTE: YOU NEED A KEY TOKEN
-        client = Socrata("data.cityofnewyork.us", key_token)
+        client = Socrata("data.cityofnewyork.us", env.key_token)
         # Make request
         results = client.get("43nn-pn8j", limit=500_000)
         # Convert to pandas DataFrame
