@@ -6,65 +6,78 @@ import nick_acquire as a
 
 def remove_columns(ny, trash_columns=['bin', 'bbl', 'nta', 'census_tract', 'council_district', 'community_board',
                                       'grade_date', 'critical_flag', 'inspection_type', 'record_date']):
+    """This function just removes the columns passed into from the dataframe"""
     ny = ny.drop(columns=trash_columns)
     return ny
 
 
-def clean_phones(data):
+def clean_inspection_dates(data):
     ny = data.copy()
+    ny = ny[ny.inspection_date != '1900-01-01T00:00:00.000']  # Remove all values with no inspections done
+    return ny
 
-    ny = ny[ny.phone.notna()]
 
-    new_phone = []
+def clean_phones(data):
+    """This function cleans up all the phone numbers from the dataframe."""
+    ny = data.copy()  # Create copy of dataframe
 
-    for phone in ny.phone:
-        new_phone.append(re.sub(r'\D', '', phone))
-    ny.phone = new_phone
+    ny = ny[ny.phone.notna()]  # Drop all nulls
 
+    new_phone = []  # Create empty list to append new, clean phone numbers into.
+
+    for phone in ny.phone:  # Iterate through all phone numbers
+        new_phone.append(re.sub(r'\D', '', phone))  # Remove all non-digit characters
+    ny.phone = new_phone  # Replace series with new values
+
+    # Create new list with 0s for missing phones
     newer_phones = [phone if len(phone) > 1 else '0' for phone in ny.phone]
 
-    ny.phone = newer_phones
+    ny.phone = newer_phones  # Replace series with new values
 
-    ny['phone'] = pd.to_numeric(ny['phone'], errors='coerce')
-    # Convert it to an integer
-    ny['phone'] = ny['phone'].astype(int)
-    return ny
+    ny['phone'] = pd.to_numeric(ny['phone'], errors='coerce')  # Convert to numeric
+
+    ny['phone'] = ny['phone'].astype(int)  # Convert it to an integer
+
+    return ny  # Return df
 
 
 def clean_zipcodes(ny):
+    """This function cleans up all zip codes. It fills in the nulls with 0s and then converts everything to int."""
     # Clean zipcodes by filling nulls with 0 and then converting to integers
     ny.zipcode = ny.zipcode.fillna(0)
     ny.zipcode = ny.zipcode.astype(int)
-    ny = ny[ny.zipcode.notna()]  # Drop nulls
-    return ny
+    ny = ny[ny.zipcode.notna()]
+    return ny  # Return df
 
 
 def clean_streets(ny):
-    # Remove nulls from street
+    """Remove nulls from street"""
     ny = ny[ny.street.notna()]
-    return ny
+    return ny  # Return df
 
 
 def clean_scores(data):
+    """This function cleans up the scores from the dataframe."""
     ny = data.copy()
-    ny = ny[ny.inspection_date != '1900-01-01T00:00:00.000']  # Remove all values with no inspections done
-
+    # THE SECTION OF CODE BELOW IS COMMENTED OUT BECAUSE IT PROVED TO NOT BE USEFUL AT THE MOMENT
     # Create a new list of scores that replaces null scores for no violation for 0s
     # new_scores = []  # Empty list
     # for score, rep in zip(ny.score, ny.action.str.contains('No violation')):  # Loop through 2 iterable values
-    #    if rep:  # If no violation, append score 0
-    #        new_scores.append(0)
-    #    else:  # Else keep score the same
-    #        new_scores.append(score)
+    #     if rep:  # If no violation, append score 0
+    #         new_scores.append(0)
+    #     else:  # Else keep score the same
+    #         new_scores.append(score)
     # ny.score = new_scores
 
-    ny = ny[ny.score.notna()]
+    ny = ny[ny.score.notna()]  # Drop all nulls
 
-    ny.score = ny.score.astype(int)
-    return ny
+    ny.score = ny.score.astype(int)  # Convert data to integer
+
+    return ny  # Return df
 
 
 def clean_actions(ny):
+    """This function cleans up the action column. It relabels the values with a more concise one."""
     # Remove nulls from action
     ny = ny[ny.action.notna()]
     # Rename actions to something more concise
@@ -74,10 +87,11 @@ def clean_actions(ny):
     ny.action = np.where(ny.action == 'Establishment re-opened by DOHMH.', 'Re-opened', ny.action)
     ny.action = np.where(ny.action == 'No violations were recorded at the time of this inspection.', 'No violations',
                          ny.action)
-    return ny
+    return ny  # Return df
 
 
 def clean_grades(data):
+    """This function cleans up the grades by redetermining them based off the score."""
     ny = data.copy()  # Create copy of df
     # Create empty list to hold new values for restaurant
     new_grades = []
@@ -89,11 +103,13 @@ def clean_grades(data):
             new_grades.append('B')
         elif score > 27:
             new_grades.append('C')
-    ny.grade = new_grades
-    return ny
+    ny.grade = new_grades  # Update grade column
+    return ny  # Return df
 
 
 def clean_violations(data):
+    """This function cleans up the violation codes. If there is no violations under actions, the code and description
+        will be filled with 'No violation' instead of being null."""
     ny = data.copy()
     # Create empty lists
     new_codes = []
@@ -133,6 +149,8 @@ def clean_ny(ny):
 
     ny = clean_streets(ny)  # Cleans streets
 
+    ny = clean_inspection_dates(ny)
+
     ny = clean_scores(ny)  # Cleans scores
 
     ny = clean_actions(ny)  # Cleans actions
@@ -143,9 +161,9 @@ def clean_ny(ny):
 
     ny = ny.dropna()  # Drops all remaining null values
 
-    ny = combine_address(ny)
+    ny = combine_address(ny)  # Combine the address related columns into one
 
-    ny = ny.reset_index(drop=True)
+    ny = ny.reset_index(drop=True)  # Reset the index of dataframe after dropping all the other values
 
     return ny  # Return clean dataframe
 
@@ -173,13 +191,17 @@ def aggregate_violations(ny):
     ny2['violation_code'] = agg_data_code
     ny2['violation_description'] = agg_data_description
 
-    return ny2
+    return ny2  # Return df
 
 
 def clean_code(ny):
+    """This function removes 'No violation' from the rows that shouldn't have it. Some rows contained both violation
+    codes and 'No violation'."""
+    # Create empty lists
     clean_codes = []
     clean_description = []
 
+    # Loop through lists and remove 'No violation' if there are more than one element in each list
     for row1, row2 in zip(ny.violation_code, ny.violation_description):
 
         code_list1 = row1
@@ -197,33 +219,45 @@ def clean_code(ny):
         else:
             clean_description.append(code_list2)
 
+    # Reassign new data to dataframe
     ny.violation_code = clean_codes
     ny.violation_description = clean_description
 
-    return ny
+    return ny  # Return df
 
 
 def join_lists(ny):
+    """This function joins all the contents of the lists in code, and description into one string."""
+
+    # Create empty lists
     joined_code = []
     joined_description = []
 
+    # Join violation codes with a ' ' between elements
     for row in ny.violation_code:
         joined_code.append(' '.join(row))
 
+    # Join violation description with a ' ' between elements
     for row in ny.violation_description:
         joined_description.append(' '.join(row))
 
     ny.violation_code = joined_code
     ny.violation_description = joined_description
 
-    return ny
+    return ny  # Return df
 
 
 def final_ny():
-    ny = a.acquire_ny()
-    ny = clean_ny(ny)
+    """This function just combines all the previous functions into one. It will acquire and process the data."""
+    ny = a.acquire_ny()  # Acquire data, from local .csv file or api request if no .csv file is present
 
+    ny = clean_ny(ny)  # Cleans the data
+
+    # Aggregates the data into one row per inspection and compiles the violation data into a list per row
     ny = aggregate_violations(ny)
-    ny = clean_code(ny)
-    ny = join_lists(ny)
-    return ny
+
+    ny = clean_code(ny)  # Removes 'No violation' from lists it shouldn't be in
+
+    ny = join_lists(ny)  # Unpacks (combines) lists into one string
+
+    return ny  # Return df
