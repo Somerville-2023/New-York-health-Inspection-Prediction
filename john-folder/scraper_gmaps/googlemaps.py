@@ -95,24 +95,31 @@ class GoogleMapsScraper:
             logging.debug("Exception encountered:")
             traceback.print_exception(exc_type, exc_value, tb)
 
-        logging.debug("Closing and quitting driver.")
-        self.driver.close()
-        self.driver.quit()
+        # logging.debug("Closing and quitting driver.")
+        # self.driver.close()
+        # self.driver.quit()
         logging.debug("Driver closed and quit successfully.")
 
         return True
 
+
     def sort_by(self, url, ind):
-        logging.debug(f"Starting sort_by")
+        logging.debug("Starting sort_by")
         logging.debug("Attempting to navigate to URL...")
         self.driver.get(url)
         logging.debug("URL navigation successful.")
-        
-        cookie_click_result = self.__click_on_cookie_agreement()
-        if cookie_click_result:
-            logging.debug("Cookie agreement clicked successfully.")
+
+        # Check if the current URL contains the word 'consent'
+        current_url = self.driver.current_url
+        if "consent" in current_url:
+            logging.debug("Consent URL detected. Attempting to click on cookie agreement.")
+            cookie_click_result = self.__click_on_cookie_agreement()
+            if cookie_click_result:
+                logging.debug("Cookie agreement clicked successfully.")
+            else:
+                logging.debug("Failed to click cookie agreement.")
         else:
-            logging.debug("Failed to click cookie agreement or not found.")
+            logging.debug("Consent URL not detected. Skipping cookie agreement click.")
 
         wait = WebDriverWait(self.driver, MAX_WAIT)
         self.__scroll()
@@ -174,6 +181,8 @@ class GoogleMapsScraper:
                 logging.debug("Navigation to search point URL successful.")
             except NoSuchElementException:
                 logging.debug("Navigation failed. Restarting driver and retrying...")
+                os.system('afplay /System/Library/Sounds/Ping.aiff')
+                time.sleep(30)
                 self.driver.quit()
                 self.driver = self.__get_driver()
                 self.driver.get(search_point_url)
@@ -519,18 +528,54 @@ class GoogleMapsScraper:
         self.driver.execute_script('arguments[0].scrollTop = arguments[0].scrollHeight', scrollable_div)
         logging.debug("Successfully scrolled")
 
+    # def scroll_reviews(self):
+    #     logging.debug(f"Starting scroll_reviews")
+    #     try:
+    #         # Locating the parent element with class 'w6VYqd'
+    #         parent_div = self.driver.find_element(By.CSS_SELECTOR, '.w6VYqd')
+    #         # Within the parent, locating the scrollable div with the specified classes
+    #         scrollable_div = parent_div.find_element(By.CSS_SELECTOR, '.m6QErb.DxyBCb.kA9KIf.dS8AEf')
+    #         # Scrolling the element
+    #         self.driver.execute_script('arguments[0].scrollTop = arguments[0].scrollHeight', scrollable_div)
+    #         print('waiting 2 secs')
+    #         time.sleep(2)
+    #         self.driver.execute_script('arguments[0].scrollTop = arguments[0].scrollHeight', scrollable_div)
+    #         print('waiting 2 secs')
+    #         time.sleep(2)
+    #         self.driver.execute_script('arguments[0].scrollTop = arguments[0].scrollHeight', scrollable_div)
+    #         logging.debug("Successfully scrolled in scroll_reviews")
+    #     except Exception as e:
+    #         logging.debug(f"Error in scroll_reviews: {e}")
+
     def scroll_reviews(self):
-        logging.debug(f"Starting scroll_reviews")
+        logging.debug("Starting scroll_reviews")
         try:
             # Locating the parent element with class 'w6VYqd'
             parent_div = self.driver.find_element(By.CSS_SELECTOR, '.w6VYqd')
             # Within the parent, locating the scrollable div with the specified classes
             scrollable_div = parent_div.find_element(By.CSS_SELECTOR, '.m6QErb.DxyBCb.kA9KIf.dS8AEf')
-            # Scrolling the element
-            self.driver.execute_script('arguments[0].scrollTop = arguments[0].scrollHeight', scrollable_div)
+
+            max_scrolls = 10
+            min_scrolls = 3  # Ensure a minimum number of scrolls
+            for i in range(max_scrolls):
+                last_height = self.driver.execute_script("return arguments[0].scrollHeight", scrollable_div)
+                self.driver.execute_script('arguments[0].scrollTop = arguments[0].scrollHeight', scrollable_div)
+                
+                if i >= min_scrolls - 1:  # Apply dynamic waiting after minimum scrolls
+                    try:
+                        WebDriverWait(self.driver, 20).until(
+                            lambda d: d.execute_script("return arguments[0].scrollHeight", scrollable_div) > last_height
+                        )
+                    except TimeoutException:
+                        logging.debug(f"No new content loaded after scroll {i+1}.")
+                        break
+
+                logging.debug(f"Scroll {i+1}/{max_scrolls} completed. Content height: {last_height}")
+
             logging.debug("Successfully scrolled in scroll_reviews")
         except Exception as e:
             logging.debug(f"Error in scroll_reviews: {e}")
+
 
     def __get_logger(self):
         logging.debug(f"Starting __get_logger")
