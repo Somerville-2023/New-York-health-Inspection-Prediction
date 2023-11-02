@@ -66,19 +66,10 @@ import requests
 
 
 def construct_text_query(row):
-<<<<<<< HEAD
-    
-    text_query = f"{row['dba']} {row['full_address']} {row['boro']} {row['phone']}"
-    
-    # text_query = f"{row['dba']} {row['building']} {row['street']} {row['boro']}"
-    if pd.notnull(row['zipcode']):
-        text_query += f" {int(row['zipcode'])}"
-=======
     text_query = f"{row['dba']} {row['full_address']} {row['boro']}"
     # text_query = f"{row['dba']} {row['building']} {row['street']} {row['boro']}"
     # if pd.notnull(row['zipcode']):
     #     text_query += f" {int(row['zipcode'])}"
->>>>>>> fc161b8682bf772abd515ae988d8fa29a9a45a69
     if pd.notnull(row['phone']):
         text_query += f" {row['phone']}"
     # if pd.notnull(row['cuisine_description']):
