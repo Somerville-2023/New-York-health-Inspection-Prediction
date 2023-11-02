@@ -1,6 +1,6 @@
 import pandas as pd
 import numpy as np
-
+import acquire as a
 
 def remove_columns(ny, trash_columns=['bin', 'bbl', 'nta', 'census_tract', 'council_district', 'community_board',
                                       'grade_date', 'critical_flag', 'inspection_type']):
@@ -120,4 +120,104 @@ def clean_ny(ny):
 
     ny = ny.reset_index(drop=True)  # Reset the index and drop the old index
 
+    ny['inspection_date'] = pd.to_datetime(ny['inspection_date'])
+
     return ny  # Return clean dataframe
+
+
+def aggregate_violations(ny):
+    """This function will aggregate all rows for each inspection for each restaurant into on row by combining the
+       violations."""
+    # Create aggregated df indexed by camis and inspection_date
+    agg_violations = ny.groupby(['camis', 'inspection_date']).agg({'violation_code': lambda x: x.tolist(),
+                                                                   'violation_description': lambda x: x.tolist()})
+    # Create separate df without code & description
+    ny2 = ny.drop(columns=['violation_code', 'violation_description']).copy()
+    ny2 = ny2.drop_duplicates()  # Drop duplicates
+
+    # Create empty lists
+    agg_data_code = []
+    agg_data_description = []
+
+    # Loop through df without duplicates and create lists of aggregated violations
+    for cam, date in zip(ny2.camis, ny2.inspection_date):
+        agg_data_code.append(agg_violations.loc[(cam, date)][0])
+        agg_data_description.append(agg_violations.loc[(cam, date)][1])
+
+    # Insert new, aggregated violations into df
+    ny2['violation_code'] = agg_data_code
+    ny2['violation_description'] = agg_data_description
+
+    return ny2  # Return df
+
+
+def clean_code(ny):
+    """This function removes 'No violation' from the rows that shouldn't have it. Some rows contained both violation
+    codes and 'No violation'."""
+    # Create empty lists
+    clean_codes = []
+    clean_description = []
+
+    # Loop through lists and remove 'No violation' if there are more than one element in each list
+    for row1, row2 in zip(ny.violation_code, ny.violation_description):
+
+        code_list1 = row1
+        code_list2 = row2
+
+        if len(code_list1) > 1 and 'No violation' in code_list1:
+            code_list1.remove('No violation')
+            clean_codes.append(code_list1)
+        else:
+            clean_codes.append(code_list1)
+
+        if len(code_list2) > 1 and 'No violation' in code_list2:
+            code_list2.remove('No violation')
+            clean_description.append(code_list2)
+        else:
+            clean_description.append(code_list2)
+
+    # Reassign new data to dataframe
+    ny.violation_code = clean_codes
+    ny.violation_description = clean_description
+
+    return ny  # Return df
+
+
+def join_lists(ny):
+    """This function joins all the contents of the lists in code, and description into one string."""
+
+    # Create empty lists
+    joined_code = []
+    joined_description = []
+
+    # Join violation codes with a ' ' between elements
+    for row in ny.violation_code:
+        joined_code.append(' '.join(row))
+
+    # Join violation description with a ' ' between elements
+    for row in ny.violation_description:
+        joined_description.append(' '.join(row))
+
+    ny.violation_code = joined_code
+    ny.violation_description = joined_description
+
+    return ny  # Return df
+
+
+def final_ny():
+    """This function just combines all the previous functions into one. It will acquire and process the data."""
+    ny = a.acquire_ny()  # Acquire data, from local .csv file or api request if no .csv file is present
+
+    ny = clean_ny(ny)  # Cleans the data
+
+    # Aggregates the data into one row per inspection and compiles the violation data into a list per row
+    ny = aggregate_violations(ny)
+
+    ny = clean_code(ny)  # Removes 'No violation' from lists it shouldn't be in
+
+    ny = join_lists(ny)  # Unpacks (combines) lists into one string
+
+    ny['inspection_date'] = pd.to_datetime(ny['inspection_date'])
+
+
+    return ny  # Return df
