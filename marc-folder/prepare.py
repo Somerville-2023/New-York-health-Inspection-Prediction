@@ -3,7 +3,7 @@ import numpy as np
 
 
 def remove_columns(ny, trash_columns=['bin', 'bbl', 'nta', 'census_tract', 'council_district', 'community_board',
-                                      'grade_date']):
+                                      'grade_date', 'critical_flag', 'inspection_type']):
     ny = ny.drop(columns=trash_columns)
     return ny
 
@@ -117,5 +117,7 @@ def clean_ny(ny):
     ny = clean_violations(ny)  # Cleans violation codes and descriptions
 
     ny = ny.dropna()  # Drops all remaining null values
+
+    ny = ny.reset_index(drop=True)  # Reset the index and drop the old index
 
     return ny  # Return clean dataframe
