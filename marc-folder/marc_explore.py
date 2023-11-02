@@ -117,14 +117,12 @@ def visual_2(data):
     scores_queens = pd.Series(top_20_scores.boro == 'Queens')
 
     # Perform the t-test
-    t_statistic, p_value = stats.ttest_ind(scores_bronx, scores_queens)
+    t_statistic, t_test_p_value = stats.ttest_ind(scores_bronx, scores_queens)
     
     # Print the results
     print(f"t-statistic: {t_statistic}")
     print(f"P-value: {t_test_p_value}\n")
-    eval_result(p_value)
-    print(f"\nThere is a significant difference in health inspection scores between the Bronx and Queens.")
-
+    eval_t_test_result(t_test_p_value)
 
 def visual_3(data):
 
