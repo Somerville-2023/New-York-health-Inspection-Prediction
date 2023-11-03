@@ -147,7 +147,7 @@ def combine_address(ny):
     """This function combines the addresses of the restaurants into one single feature."""
     full_addy = ny.building + ' ' + ny.street + ' ' + ny.zipcode.astype(str)  # Concat the address together
     ny['full_address'] = full_addy  # Create new feature
-    ny = ny.drop(columns=['building', 'street', 'zipcode'])  # Drop old features
+    ny = ny.drop(columns=['building', 'street'])  # Drop old features
     return ny  # Return df
 
 
