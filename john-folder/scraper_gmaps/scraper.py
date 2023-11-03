@@ -103,6 +103,16 @@ with GoogleMapsScraper(debug=args.debug) as scraper:
             # Increment count and check if it's time to renew IP
             count += 1
             print(f'The current page count is {count}')
+            # if count % renew_interval == 0:
+            #     print("Renewing Tor IP...")
+            #     scraper.renew_tor_ip()
             if count % renew_interval == 0:
                 print("Renewing Tor IP...")
-                scraper.renew_tor_ip()
+                try:
+                    scraper.renew_tor_ip()
+                    print("Tor IP renewal attempted.")
+                except Exception as e:
+                    print(f"Failed to renew Tor IP: {e}")
+                    # Decide what to do next, possibly break out of the loop or handle the exception in some way
+                    # For example, you might want to stop the entire scraping process if you can't renew the IP
+                    break

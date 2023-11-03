@@ -27,6 +27,11 @@ For Unix-like operating systems (Linux, macOS):
 source activate j_scraper
 ```
 
+Or:
+```sh
+conda activate j_scraper
+```
+
 ### 4. Install Required Python Packages
 
 Install the necessary Python packages for your web scraping project using `pip`.
@@ -45,10 +50,11 @@ brew install tor
 
 ### 6. Edit the Tor Configuration File (`torrc`)
 
-Copy the sample Tor configuration file to create a `torrc` file.
+Create a `torrc` file with the basic configuration.
 
 ```sh
-sudo cp /usr/local/etc/tor/torrc.sample /usr/local/etc/tor/torrc
+sudo sh -c 'echo -e "ControlPort 9051\nSOCKSPort 9050\nHashedControlPassword YOUR_PASS" > /usr/local/etc/tor/torrc'
+
 ```
 
 Open the `torrc` file with Visual Studio Code for editing.
@@ -57,20 +63,16 @@ Open the `torrc` file with Visual Studio Code for editing.
 code /usr/local/etc/tor/torrc
 ```
 
-Make the following changes in the `torrc` file:
-- Uncomment the `ControlPort` line to enable the control port:
-  ```
-  ControlPort 9051
-  ```
-- Uncomment the `SOCKSPort` line to enable the SOCKS proxy:
-  ```
-  SOCKSPort 9050
-  ```
-- Using terminal, create a hashed password for Tor's control port authentication:
+Using terminal, create a hashed password for Tor's control port authentication:
   ```sh
   tor --hash-password your_chosen_password
   ```
-  Copy the resulting hashed password. Uncomment the `HashedControlPassword` line and replace the placeholder with your hashed password:
+  Copy the resulting hashed password. Now open the `torrc` file with Visual Studio Code for editing.
+
+```sh
+code /usr/local/etc/tor/torrc
+```
+- Paste your password
   ```sh
   HashedControlPassword 16:YOUR_HASHED_PASSWORD_HERE
   ```
@@ -114,3 +116,5 @@ Update the file paths. chrome_binary_path ***may** be the same as it uses the de
         # Specify the path to the ChromeDriver executable for Chrome Beta
         driver_path = "/Users/jongarcia/codeup-data-science/googlemaps-scraper/chromedriver-mac-x64 BETA/chromedriver"
 ```
+
+
