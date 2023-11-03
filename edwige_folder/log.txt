@@ -19,3 +19,51 @@ https://api.census.gov/data/2018/acs/acs5/profile/variables/DP05_0001E.json
 
 Census API Data dictionary
 https://api.census.gov/data.html
+
+Census variables
+- replace the year with whichever year we are targetting
+https://api.census.gov/data/2022/acs/acs1/variables.html
+- below is the latest for the acs5 
+https://api.census.gov/data/2021/acs/acs5/profile/variables
+
+*
+We are choosing to use ACS-5 to get a more accurate dataset with a lower degree of error.
+
+As the dataset time spans covid the data should reflect the entire period, and it is the only data availbel to compare and glean insight from other cities where demographic data would not meet the population treshold for smaller population clusters.
+*
+
+
+ACS-1 vs ACS-5 Report and comparison
+
+The United States Census Bureau conducts a variety of surveys, with the American Community Survey (ACS) being one of its major ongoing surveys. The ACS collects detailed demographic, social, economic, and housing information from a sample of households and group quarters throughout the year.
+
+The ACS produces estimates for a wide range of characteristics, and to ensure that data are available as soon as possible, the ACS releases estimates based on different data collection periods. The main differences between the ACS 1-year estimates (often referred to as ACS1) and the ACS 5-year estimates (often referred to as ACS5) are:
+
+1. Coverage:
+
+ACS1: Provides data for areas with a population of 65,000 or more.
+ACS5: Provides data for all areas, including small geographies like census tracts and block groups.
+
+2. Sample Size:
+
+ACS1: Based on data collected over a 1-year period.
+ACS5: Based on data collected over a 5-year period. Hence, it aggregates five times as much data as the ACS1.
+
+3. Currency vs. Precision:
+
+ACS1: More current because the data is from the most recent year, but less precise due to a smaller sample size.
+ACS5: Less current since it covers a 5-year period, but typically more precise because of the larger sample size.
+
+4. Release Schedule:
+
+Both the ACS1 and ACS5 estimates are released annually, but they might have slightly different release dates.
+
+5. Use Cases:
+
+ACS1: Useful for analyzing up-to-date trends and for geographies with populations of 65,000 and above.
+ACS5: Useful for analyzing smaller geographies and when precision is more important than currency.
+
+6. Margin of Error:
+
+Due to the larger sample size, the ACS5 typically has smaller margins of error than the ACS1 for most areas and characteristics. However, for rapidly changing populations or characteristics, the ACS1 might offer a more recent snapshot.
+In summary, when deciding between ACS1 and ACS5, users should consider the trade-offs between currency and precision, as well as the geographic level of interest. For larger areas where recent data is crucial, ACS1 might be more appropriate. For smaller areas or when precision is needed, ACS5 would be the better choice.
