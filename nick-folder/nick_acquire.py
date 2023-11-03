@@ -4,6 +4,8 @@ from env import key_token
 
 
 def acquire_ny():
+    """This function will acquire the ny data either from a local copy of a .csv file or via api call if file does
+    not exist."""
     filename = 'ny.csv'  # File name
     if os.path.isfile(filename):  # Checks for local file
         return pd.read_csv(filename)  # Returns local file if there is one
