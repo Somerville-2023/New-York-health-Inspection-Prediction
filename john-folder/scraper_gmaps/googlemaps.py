@@ -162,6 +162,18 @@ class GoogleMapsScraper:
         else:
             logging.debug("Consent URL not detected. Skipping cookie agreement click.")
 
+        # Check for the total number of reviews
+        try:
+            logging.debug("Looking for the total number of reviews...")
+            reviews_element = self.driver.find_element(By.CLASS_NAME, 'F7nice')
+            reviews_text = reviews_element.text.split('(')[1].replace(',', '').replace(')', '')
+            # If the text does not contain numbers, this will raise a ValueError
+            total_reviews = int(reviews_text)
+            logging.debug(f"Total number of reviews found: {total_reviews}")
+        except (NoSuchElementException, IndexError, ValueError) as e:
+            logging.debug("No number of reviews found or element not present. Error: {}".format(e))
+            return -1
+
         wait = WebDriverWait(self.driver, MAX_WAIT)
         self.__scroll()
         self.__expand_reviews()
