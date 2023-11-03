@@ -1,4 +1,9 @@
+import pandas as pd
+import os
+import census
+from us import states
 
+from env import census_api_key
 
 
 nyc_zip_codes = ['10001', '10002', '10003', '10004', '10005', '10006', '10007', '10008', '10009', '10010', 
