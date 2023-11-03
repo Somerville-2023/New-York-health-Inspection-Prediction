@@ -7,10 +7,6 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from scipy import stats
 
-# --------------------------------------------------------------------------------------------------------------------------
-# NY visual/stats tests function
-
-
 # ==============================================STATS TEST EVALUATION FUNCTION==============================================
 
 def eval_t_test_result(p_value, a=0.05):
