@@ -161,7 +161,8 @@ def visual_3(data):
 def visual_4(data):
 
     # Convert inspection_date to numeric format (e.g., seconds since the epoch)
-    data['inspection_date_numeric'] = data['inspection_date'].view('int64') // 10**9  # Convert to seconds
+    data['inspection_date'] = pd.to_datetime(data['inspection_date'])  # Convert to datetime
+    data['inspection_date_numeric'] = data['inspection_date'].apply(lambda x: x.timestamp())  # Convert to seconds
     
     # set font and style
     sns.set(font_scale=1.25, style="white")

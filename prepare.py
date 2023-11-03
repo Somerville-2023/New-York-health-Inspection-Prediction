@@ -285,7 +285,10 @@ def final_ny():
 
     return ny  # Return df
 
-# --------------------------------------------------------------------------------------------------------
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Google Review data prep functions
 
 # NLP Functions
 
@@ -461,10 +464,6 @@ def cleanse_reviews(scraped_data, api_data):
     df = calculate_days(df)  # Calculate estimated publish time
     df = clean_reviews(df)  # Finish cleaning df
     return pd.concat([df, df2])  # Return the two joined df
-
-
-# ---------------------------------------------------------------------------------------------------------------------
-# Google Review data prep functions
 
 
 # ---------------------------------------------------------------------------------------------------------------------
