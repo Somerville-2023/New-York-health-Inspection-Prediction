@@ -10,6 +10,9 @@ from nltk.tokenize.toktok import ToktokTokenizer
 from nltk.corpus import stopwords
 import unicodedata
 
+
+from datetime import timedelta
+
 nltk.download('wordnet')
 nltk.download('omw-1.4')
 
@@ -332,4 +335,101 @@ def cleanse(dataframe, col='', stemm=True, lem=True, extra_words=[], exclude_wor
         df['stemmed'] = df.clean.apply(stem)
     if lem:
         df['lemmatized'] = df.clean.apply(lemmatize)
+    return df
+
+
+# --------------------------------------------------------------------------------------------------------
+
+# Review data functions
+
+
+def clean_api_reviews(api_data):
+    df = api_data.copy()
+    cols = ['camis', 'publish_time', 'review_text', 'review_rating']
+    df = df[cols]
+    df.publish_time = pd.to_datetime(df.publish_time)
+    return df
+
+
+def clean_dates(data):
+    scrape_reviews = data.copy()
+    scrape_reviews.relative_date = scrape_reviews.relative_date.apply(lambda x: x[:-4])
+    scrape_reviews.relative_date = ['1 years' if date == 'a year' else date for date in scrape_reviews.relative_date]
+    scrape_reviews.relative_date = [re.sub(r'^a', '1', date) if date[0] == 'a' else date
+                                    for date in scrape_reviews.relative_date]
+    return scrape_reviews
+
+
+def adjust_dates(scrape_reviews):
+    dataframes = []  # Create empty list to store dataframes
+
+    # Isolate each restaurant by id
+    for restaurant_id in scrape_reviews.id.unique():
+        # Create dataframe of ONE restaurant
+        restaurant = scrape_reviews[scrape_reviews.id == restaurant_id].copy()
+
+        # Create df of review counts per relative_date and calculate average distribution of reviews
+        place = scrape_reviews[scrape_reviews.id == restaurant_id]
+        review_counts = pd.DataFrame(place.relative_date.value_counts())
+        review_counts['increment'] = 365 / review_counts.relative_date
+
+        # Create empty list for new dates, i variable to count increments, and previous_year to track year
+        new_dates = []
+        i = 0
+        previous_year = '1 years'
+
+        for date in restaurant.relative_date:
+            if 'years' in date:  # If date is in years, function will adjust it to estimated date
+                if date != previous_year:  # When date changes from 'x years' to 'x + 1 years' counters are reset
+                    i = 0
+                    previous_year = date
+                # Calculate adjusted date
+                adjusted_date = (365 * (int(re.findall(r'\d+', date)[0]))) + (review_counts.loc[date].increment * i)
+                i += 1
+                new_dates.append(str(round(adjusted_date)))  # Append adjsuted date
+            else:
+                new_dates.append(date)  # Append normal date if date < 1 year
+        restaurant['new_date'] = new_dates  # Replace dates with new_dates
+        dataframes.append(restaurant)  # Append dataframe to list of dataframes
+    reviews = pd.concat(dataframes)  # Join all dataframes
+    return reviews  # Return joined data
+
+
+def calculate_days(data):
+    reviews = data.copy()
+    new_date = []
+    for date in reviews.new_date:
+        unit = re.sub(r'[^a-z]', '', date)
+        if 'hour' in unit:
+            new_date.append('1')
+        elif 'day' in unit:
+            new_date.append(re.sub(r'[^0-9]', '', date))
+        elif 'week' in unit:
+            new_date.append(int(re.sub(r'[^0-9]', '', date))*7)
+        elif 'month' in unit:
+            new_date.append(int(re.sub(r'[^0-9]', '', date))*30)
+        else:
+            new_date.append(date)
+
+    reviews['newer_dates'] = new_date
+    reviews['final_date'] = [pd.to_datetime(retrieval_date) - timedelta(days=n) for retrieval_date,
+                             n in zip(reviews.retrieval_date, reviews.newer_dates.astype(int))]
+    return reviews
+
+
+def clean_reviews(data):
+    final_df = data.copy()
+    cols = ['id', 'final_date', 'caption', 'rating']
+    final_df = final_df[cols]
+    final_df.rating = final_df.rating.astype(int)
+    final_df.columns = ['camis', 'publish_time', 'review_text', 'review_rating']
+    return final_df
+
+
+def cleanse_reviews(data):
+    df = data.copy()
+    df = clean_dates(df)
+    df = adjust_dates(df)
+    df = calculate_days(df)
+    df = clean_reviews(df)
     return df
