@@ -12,6 +12,7 @@ import requests
 
 from stem import Signal
 from stem.control import Controller
+from stem import SocketClosed
 
 from bs4 import BeautifulSoup
 from datetime import datetime
@@ -28,6 +29,7 @@ GM_WEBPAGE = 'https://www.google.com/maps/'
 MAX_WAIT = 10
 MAX_RETRY = 5
 MAX_SCROLLS = 40
+MAX_IP_RENEWAL_ATTEMPTS = 2
 
 class GoogleMapsScraper:
 
@@ -38,17 +40,56 @@ class GoogleMapsScraper:
         self.logger = self.__get_logger()
         logging.debug("GoogleMapsScraper initialized successfully.")
 
-    def renew_tor_ip(self):
-        with Controller.from_port(port=9051) as controller:
-            controller.authenticate(password= env.torp)  # Use the password you set
-            controller.signal(Signal.NEWNYM)
-        # Check if IP has changed
-        new_ip = self.__get_ip_with_tor()
-        if new_ip != self.last_masked_ip:
-            print("Tor IP successfully renewed.")
-            self.last_masked_ip = new_ip
-        else:
-            print("Warning: Tor IP did not change after renewal.")
+    # def renew_tor_ip(self):
+    #     with Controller.from_port(port=9051) as controller:
+    #         controller.authenticate(password= env.torp)  # Use the password you set
+    #         controller.signal(Signal.NEWNYM)
+    #     # Check if IP has changed
+    #     new_ip = self.__get_ip_with_tor()
+    #     if new_ip != self.last_masked_ip:
+    #         print("Tor IP successfully renewed.")
+    #         print(f"New IP:{new_ip}")
+    #         print(f"Previous IP:{self.last_masked_ip}")
+    #         self.last_masked_ip = new_ip
+    #     else:
+    #         print("Warning: Tor IP did not change after renewal.")
+
+
+    def renew_tor_ip(self, attempt=1, max_attempts=7):
+        success = False
+        while attempt <= max_attempts and not success:
+            try:
+                with Controller.from_port(port=9051) as controller:
+                    controller.authenticate(password=env.torp)  # Authenticate with the password
+                    controller.signal(Signal.NEWNYM)  # Send the signal to get a new Tor identity
+                    time.sleep(controller.get_newnym_wait())  # Wait the recommended amount of time
+
+                # Check if the IP has been successfully changed
+                new_ip = self.__get_ip_with_tor()
+                if new_ip != self.last_masked_ip:
+                    print("Tor IP successfully renewed.")
+                    print(f"New IP: {new_ip}")
+                    print(f"Previous IP: {self.last_masked_ip}")
+                    self.last_masked_ip = new_ip
+                    success = True
+                else:
+                    print("Warning: Tor IP did not change after renewal attempt.")
+
+            except SocketClosed as e:
+                print(f"SocketClosed error occurred: {e}")
+            except Exception as e:
+                print(f"An unexpected error occurred: {e}")
+
+            if not success:
+                wait_time = min(10 * (2 ** attempt), 10 * 60)  # Exponential backoff capped at 10 minutes
+                print(f"Retrying IP renewal in {wait_time} seconds, attempt {attempt} of {max_attempts}")
+                time.sleep(wait_time)
+                attempt += 1
+
+        if not success:
+            raise Exception("Failed to renew Tor IP after maximum attempts.")
+
+
 
     def __get_ip_without_tor(self):
         response = requests.get('http://httpbin.org/ip')
@@ -103,7 +144,67 @@ class GoogleMapsScraper:
         return True
 
 
-    def sort_by(self, url, ind):
+    # def sort_by(self, url, ind):
+    #     logging.debug("Starting sort_by")
+    #     logging.debug("Attempting to navigate to URL...")
+    #     self.driver.get(url)
+    #     logging.debug("URL navigation successful.")
+
+    #     # Check if the current URL contains the word 'consent'
+    #     current_url = self.driver.current_url
+    #     if "consent" in current_url:
+    #         logging.debug("Consent URL detected. Attempting to click on cookie agreement.")
+    #         cookie_click_result = self.__click_on_cookie_agreement()
+    #         if cookie_click_result:
+    #             logging.debug("Cookie agreement clicked successfully.")
+    #         else:
+    #             logging.debug("Failed to click cookie agreement.")
+    #     else:
+    #         logging.debug("Consent URL not detected. Skipping cookie agreement click.")
+
+    #     wait = WebDriverWait(self.driver, MAX_WAIT)
+    #     self.__scroll()
+    #     self.__expand_reviews()
+        
+    #     # open dropdown menu
+    #     clicked = False
+    #     tries = 0
+    #     while not clicked and tries < MAX_RETRY:
+    #         try:
+    #             logging.debug("Attempting to click sorting button...")
+    #             menu_bt = wait.until(EC.element_to_be_clickable((By.XPATH, '//button[@data-value=\'Sort\']')))
+    #             menu_bt.click()
+
+    #             clicked = True
+    #             time.sleep(3)
+    #             logging.debug("Sorting button clicked successfully.")
+    #         except Exception as e:
+    #             tries += 1
+    #             logging.debug(f"Failed to click sorting button on attempt {tries}. Retrying...")
+    #             self.logger.warn('Failed to click sorting button')
+
+    #         # failed to open the dropdown
+    #         if tries == MAX_RETRY:
+    #             logging.debug("Failed to open the dropdown menu after maximum retries.")
+    #             return -1
+
+    #     logging.debug(f"Attempting to select sorting option index {ind}...")
+    #     try:
+    #         recent_rating_bt = self.driver.find_elements(By.XPATH, '//div[@role=\'menuitemradio\']')[ind]
+    #         recent_rating_bt.click()
+    #         logging.debug("Sorting option selected successfully.")
+    #     except Exception as e:
+    #         logging.debug(f"Failed to select sorting option index {ind}. Error: {e}")
+    #         return -1
+
+    #     # wait to load review (ajax call)
+    #     time.sleep(5)
+    #     logging.debug("Waiting for reviews to load after sorting...")
+
+    #     return 0
+
+
+    def sort_by(self, url, ind, ip_renewal_attempts=0):
         logging.debug("Starting sort_by")
         logging.debug("Attempting to navigate to URL...")
         self.driver.get(url)
@@ -125,7 +226,7 @@ class GoogleMapsScraper:
         self.__scroll()
         self.__expand_reviews()
         
-        # open dropdown menu
+        # Attempt to open dropdown menu
         clicked = False
         tries = 0
         while not clicked and tries < MAX_RETRY:
@@ -133,7 +234,6 @@ class GoogleMapsScraper:
                 logging.debug("Attempting to click sorting button...")
                 menu_bt = wait.until(EC.element_to_be_clickable((By.XPATH, '//button[@data-value=\'Sort\']')))
                 menu_bt.click()
-
                 clicked = True
                 time.sleep(3)
                 logging.debug("Sorting button clicked successfully.")
@@ -142,10 +242,23 @@ class GoogleMapsScraper:
                 logging.debug(f"Failed to click sorting button on attempt {tries}. Retrying...")
                 self.logger.warn('Failed to click sorting button')
 
-            # failed to open the dropdown
-            if tries == MAX_RETRY:
-                logging.debug("Failed to open the dropdown menu after maximum retries.")
+        # Failed to open the dropdown
+        if tries == MAX_RETRY:
+            logging.debug("Failed to open the dropdown menu after maximum retries.")
+            # If IP renewal attempts are exhausted or another error is suspected, return -1
+            if ip_renewal_attempts >= MAX_IP_RENEWAL_ATTEMPTS:
+                logging.error(f"Exhausted IP renewal attempts or other errors suspected. Cannot sort reviews for URL: {url}")
                 return -1
+            else:
+                # Suspect an IP block and try to renew Tor IP
+                logging.debug("Suspected IP block. Attempting to renew Tor IP.")
+                try:
+                    self.renew_tor_ip()
+                    # Recursively try to sort again, with incremented ip_renewal_attempts
+                    return self.sort_by(url, ind, ip_renewal_attempts + 1)
+                except Exception as e:
+                    logging.error(f"Failed to renew Tor IP or sorting still fails after IP renewal: {e}")
+                    return -1
 
         logging.debug(f"Attempting to select sorting option index {ind}...")
         try:
@@ -156,11 +269,14 @@ class GoogleMapsScraper:
             logging.debug(f"Failed to select sorting option index {ind}. Error: {e}")
             return -1
 
-        # wait to load review (ajax call)
+        # Wait to load review (ajax call)
         time.sleep(5)
         logging.debug("Waiting for reviews to load after sorting...")
 
         return 0
+
+
+
 
     def get_places(self, keyword_list=None):
         logging.debug(f"Starting get_places")
@@ -663,4 +779,3 @@ class GoogleMapsScraper:
         strOut = str.replace('\r', ' ').replace('\n', ' ').replace('\t', ' ')
         logging.debug(f"Cleaned string: {strOut}")
         return strOut
-
