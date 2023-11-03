@@ -57,6 +57,11 @@ sudo cp /usr/local/etc/tor/torrc.sample /usr/local/etc/tor/torrc
 
 ```
 
+Or create a new torrc file with the settigs
+```sh
+sudo sh -c 'echo -e "ControlPort 9051\nSOCKSPort 9050\nHashedControlPassword YOUR_PASS" > /usr/local/etc/tor/torrc'
+```
+
 Open the `torrc` file with Visual Studio Code for editing.
 
 ```sh
