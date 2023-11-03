@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 
 import re
 import nick_acquire as a
@@ -265,16 +266,22 @@ def join_lists(ny):
 
 def final_ny():
     """This function just combines all the previous functions into one. It will acquire and process the data."""
-    ny = a.acquire_ny()  # Acquire data, from local .csv file or api request if no .csv file is present
+    filename = 'clean_ny.csv'  # File name
+    if os.path.isfile(filename):  # Checks for local file
+        return pd.read_csv(filename)  # Returns local file if there is one
+    else:
+        ny = a.acquire_ny()  # Acquire data, from local .csv file or api request if no .csv file is present
 
-    ny = clean_ny(ny)  # Cleans the data
+        ny = clean_ny(ny)  # Cleans the data
 
-    # Aggregates the data into one row per inspection and compiles the violation data into a list per row
-    ny = aggregate_violations(ny)
+        # Aggregates the data into one row per inspection and compiles the violation data into a list per row
+        ny = aggregate_violations(ny)
 
-    ny = clean_code(ny)  # Removes 'No violation' from lists it shouldn't be in
+        ny = clean_code(ny)  # Removes 'No violation' from lists it shouldn't be in
 
-    ny = join_lists(ny)  # Unpacks (combines) lists into one string
+        ny = join_lists(ny)  # Unpacks (combines) lists into one string
+
+        ny.to_csv(filename, index=False)  # Cache file
 
     return ny  # Return df
 
@@ -393,7 +400,7 @@ def adjust_dates(scrape_reviews):
         previous_year = '1 years'
 
         for date in restaurant.relative_date:
-            if 'years' in date:  # If date is in years, function will adjust it to estimated date
+            if 'year' in date:  # If date is in years, function will adjust it to estimated date
                 if date != previous_year:  # When date changes from 'x years' to 'x + 1 years' counters are reset
                     i = 0
                     previous_year = date
@@ -428,8 +435,8 @@ def calculate_days(data):
 
     reviews['newer_dates'] = new_date  # Creates new date column
     # Calculates estimated review date based off retrieval time and adjusted relative time
-    reviews['final_date'] = [pd.to_datetime(retrieval_date) - timedelta(days=n) for retrieval_date,
-                             n in zip(reviews.retrieval_date, reviews.newer_dates.astype(int))]
+    reviews['final_date'] = [pd.to_datetime(retrieval_date) - timedelta(days=n) for retrieval_date, n
+                             in zip(reviews.retrieval_date, reviews.newer_dates.astype(int))]
     return reviews  # Return df
 
 
@@ -443,11 +450,23 @@ def clean_reviews(data):
     return final_df  # Return df
 
 
-def cleanse_reviews(data):
+def cleanse_reviews(scraped_data, api_data):
     """This function combines each step into one function to yield the final product in one function call."""
-    df = data.copy()  # Creates copy of df
+    df = scraped_data.copy()  # Creates copy of scraped df
+    df2 = api_data.copy()  # Creates copy of api df
+
+    df2 = clean_api_reviews(df2)  # Clean the api df
+
     df = clean_dates(df)  # Clean dates
     df = adjust_dates(df)  # Adjust dates
     df = calculate_days(df)  # Calculate estimated publish time
     df = clean_reviews(df)  # Finish cleaning df
-    return df  # Return df=
+    return pd.concat([df, df2])  # Return the two joined df
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Google Review data prep functions
+
+
+# ---------------------------------------------------------------------------------------------------------------------
+# Census data prep functions
