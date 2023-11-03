@@ -144,67 +144,7 @@ class GoogleMapsScraper:
         return True
 
 
-    # def sort_by(self, url, ind):
-    #     logging.debug("Starting sort_by")
-    #     logging.debug("Attempting to navigate to URL...")
-    #     self.driver.get(url)
-    #     logging.debug("URL navigation successful.")
-
-    #     # Check if the current URL contains the word 'consent'
-    #     current_url = self.driver.current_url
-    #     if "consent" in current_url:
-    #         logging.debug("Consent URL detected. Attempting to click on cookie agreement.")
-    #         cookie_click_result = self.__click_on_cookie_agreement()
-    #         if cookie_click_result:
-    #             logging.debug("Cookie agreement clicked successfully.")
-    #         else:
-    #             logging.debug("Failed to click cookie agreement.")
-    #     else:
-    #         logging.debug("Consent URL not detected. Skipping cookie agreement click.")
-
-    #     wait = WebDriverWait(self.driver, MAX_WAIT)
-    #     self.__scroll()
-    #     self.__expand_reviews()
-        
-    #     # open dropdown menu
-    #     clicked = False
-    #     tries = 0
-    #     while not clicked and tries < MAX_RETRY:
-    #         try:
-    #             logging.debug("Attempting to click sorting button...")
-    #             menu_bt = wait.until(EC.element_to_be_clickable((By.XPATH, '//button[@data-value=\'Sort\']')))
-    #             menu_bt.click()
-
-    #             clicked = True
-    #             time.sleep(3)
-    #             logging.debug("Sorting button clicked successfully.")
-    #         except Exception as e:
-    #             tries += 1
-    #             logging.debug(f"Failed to click sorting button on attempt {tries}. Retrying...")
-    #             self.logger.warn('Failed to click sorting button')
-
-    #         # failed to open the dropdown
-    #         if tries == MAX_RETRY:
-    #             logging.debug("Failed to open the dropdown menu after maximum retries.")
-    #             return -1
-
-    #     logging.debug(f"Attempting to select sorting option index {ind}...")
-    #     try:
-    #         recent_rating_bt = self.driver.find_elements(By.XPATH, '//div[@role=\'menuitemradio\']')[ind]
-    #         recent_rating_bt.click()
-    #         logging.debug("Sorting option selected successfully.")
-    #     except Exception as e:
-    #         logging.debug(f"Failed to select sorting option index {ind}. Error: {e}")
-    #         return -1
-
-    #     # wait to load review (ajax call)
-    #     time.sleep(5)
-    #     logging.debug("Waiting for reviews to load after sorting...")
-
-    #     return 0
-
-
-    def sort_by(self, url, ind, ip_renewal_attempts=0):
+    def sort_by(self, url, ind):
         logging.debug("Starting sort_by")
         logging.debug("Attempting to navigate to URL...")
         self.driver.get(url)
@@ -226,7 +166,7 @@ class GoogleMapsScraper:
         self.__scroll()
         self.__expand_reviews()
         
-        # Attempt to open dropdown menu
+        # open dropdown menu
         clicked = False
         tries = 0
         while not clicked and tries < MAX_RETRY:
@@ -234,6 +174,7 @@ class GoogleMapsScraper:
                 logging.debug("Attempting to click sorting button...")
                 menu_bt = wait.until(EC.element_to_be_clickable((By.XPATH, '//button[@data-value=\'Sort\']')))
                 menu_bt.click()
+
                 clicked = True
                 time.sleep(3)
                 logging.debug("Sorting button clicked successfully.")
@@ -242,23 +183,10 @@ class GoogleMapsScraper:
                 logging.debug(f"Failed to click sorting button on attempt {tries}. Retrying...")
                 self.logger.warn('Failed to click sorting button')
 
-        # Failed to open the dropdown
-        if tries == MAX_RETRY:
-            logging.debug("Failed to open the dropdown menu after maximum retries.")
-            # If IP renewal attempts are exhausted or another error is suspected, return -1
-            if ip_renewal_attempts >= MAX_IP_RENEWAL_ATTEMPTS:
-                logging.error(f"Exhausted IP renewal attempts or other errors suspected. Cannot sort reviews for URL: {url}")
+            # failed to open the dropdown
+            if tries == MAX_RETRY:
+                logging.debug("Failed to open the dropdown menu after maximum retries.")
                 return -1
-            else:
-                # Suspect an IP block and try to renew Tor IP
-                logging.debug("Suspected IP block. Attempting to renew Tor IP.")
-                try:
-                    self.renew_tor_ip()
-                    # Recursively try to sort again, with incremented ip_renewal_attempts
-                    return self.sort_by(url, ind, ip_renewal_attempts + 1)
-                except Exception as e:
-                    logging.error(f"Failed to renew Tor IP or sorting still fails after IP renewal: {e}")
-                    return -1
 
         logging.debug(f"Attempting to select sorting option index {ind}...")
         try:
@@ -269,11 +197,83 @@ class GoogleMapsScraper:
             logging.debug(f"Failed to select sorting option index {ind}. Error: {e}")
             return -1
 
-        # Wait to load review (ajax call)
+        # wait to load review (ajax call)
         time.sleep(5)
         logging.debug("Waiting for reviews to load after sorting...")
 
         return 0
+
+
+    # def sort_by(self, url, ind, ip_renewal_attempts=0):
+    #     logging.debug("Starting sort_by")
+    #     logging.debug("Attempting to navigate to URL...")
+    #     self.driver.get(url)
+    #     logging.debug("URL navigation successful.")
+
+    #     # Check if the current URL contains the word 'consent'
+    #     current_url = self.driver.current_url
+    #     if "consent" in current_url:
+    #         logging.debug("Consent URL detected. Attempting to click on cookie agreement.")
+    #         cookie_click_result = self.__click_on_cookie_agreement()
+    #         if cookie_click_result:
+    #             logging.debug("Cookie agreement clicked successfully.")
+    #         else:
+    #             logging.debug("Failed to click cookie agreement.")
+    #     else:
+    #         logging.debug("Consent URL not detected. Skipping cookie agreement click.")
+
+    #     wait = WebDriverWait(self.driver, MAX_WAIT)
+    #     self.__scroll()
+    #     self.__expand_reviews()
+        
+    #     # Attempt to open dropdown menu
+    #     clicked = False
+    #     tries = 0
+    #     while not clicked and tries < MAX_RETRY:
+    #         try:
+    #             logging.debug("Attempting to click sorting button...")
+    #             menu_bt = wait.until(EC.element_to_be_clickable((By.XPATH, '//button[@data-value=\'Sort\']')))
+    #             menu_bt.click()
+    #             clicked = True
+    #             time.sleep(3)
+    #             logging.debug("Sorting button clicked successfully.")
+    #         except Exception as e:
+    #             tries += 1
+    #             logging.debug(f"Failed to click sorting button on attempt {tries}. Retrying...")
+    #             self.logger.warn('Failed to click sorting button')
+
+    #     # Failed to open the dropdown
+    #     if tries == MAX_RETRY:
+    #         logging.debug("Failed to open the dropdown menu after maximum retries.")
+    #         # If IP renewal attempts are exhausted or another error is suspected, return -1
+    #         if ip_renewal_attempts >= MAX_IP_RENEWAL_ATTEMPTS:
+    #             logging.error(f"Exhausted IP renewal attempts or other errors suspected. Cannot sort reviews for URL: {url}")
+    #             return -1
+    #         else:
+    #             # Suspect an IP block and try to renew Tor IP
+    #             logging.debug("Suspected IP block. Attempting to renew Tor IP.")
+    #             try:
+    #                 self.renew_tor_ip()
+    #                 # Recursively try to sort again, with incremented ip_renewal_attempts
+    #                 return self.sort_by(url, ind, ip_renewal_attempts + 1)
+    #             except Exception as e:
+    #                 logging.error(f"Failed to renew Tor IP or sorting still fails after IP renewal: {e}")
+    #                 return -1
+
+    #     logging.debug(f"Attempting to select sorting option index {ind}...")
+    #     try:
+    #         recent_rating_bt = self.driver.find_elements(By.XPATH, '//div[@role=\'menuitemradio\']')[ind]
+    #         recent_rating_bt.click()
+    #         logging.debug("Sorting option selected successfully.")
+    #     except Exception as e:
+    #         logging.debug(f"Failed to select sorting option index {ind}. Error: {e}")
+    #         return -1
+
+    #     # Wait to load review (ajax call)
+    #     time.sleep(5)
+    #     logging.debug("Waiting for reviews to load after sorting...")
+
+    #     return 0
 
 
 
