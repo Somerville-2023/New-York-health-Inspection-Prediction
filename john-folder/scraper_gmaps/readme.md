@@ -50,10 +50,10 @@ brew install tor
 
 ### 6. Edit the Tor Configuration File (`torrc`)
 
-Create a `torrc` file with the basic configuration.
+Copy the sample Tor configuration file to create a `torrc` file.
 
 ```sh
-sudo sh -c 'echo -e "ControlPort 9051\nSOCKSPort 9050\nHashedControlPassword YOUR_PASS" > /usr/local/etc/tor/torrc'
+sudo cp /usr/local/etc/tor/torrc.sample /usr/local/etc/tor/torrc
 
 ```
 
