@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+import os
 
 import re
 import acquire as a
@@ -9,6 +10,9 @@ import nltk
 from nltk.tokenize.toktok import ToktokTokenizer
 from nltk.corpus import stopwords
 import unicodedata
+
+
+from datetime import timedelta
 
 nltk.download('wordnet')
 nltk.download('omw-1.4')
@@ -262,16 +266,22 @@ def join_lists(ny):
 
 def final_ny():
     """This function just combines all the previous functions into one. It will acquire and process the data."""
-    ny = a.acquire_ny()  # Acquire data, from local .csv file or api request if no .csv file is present
+    filename = 'clean_ny.csv'  # File name
+    if os.path.isfile(filename):  # Checks for local file
+        return pd.read_csv(filename)  # Returns local file if there is one
+    else:
+        ny = a.acquire_ny()  # Acquire data, from local .csv file or api request if no .csv file is present
 
-    ny = clean_ny(ny)  # Cleans the data
+        ny = clean_ny(ny)  # Cleans the data
 
-    # Aggregates the data into one row per inspection and compiles the violation data into a list per row
-    ny = aggregate_violations(ny)
+        # Aggregates the data into one row per inspection and compiles the violation data into a list per row
+        ny = aggregate_violations(ny)
 
-    ny = clean_code(ny)  # Removes 'No violation' from lists it shouldn't be in
+        ny = clean_code(ny)  # Removes 'No violation' from lists it shouldn't be in
 
-    ny = join_lists(ny)  # Unpacks (combines) lists into one string
+        ny = join_lists(ny)  # Unpacks (combines) lists into one string
+
+        ny.to_csv(filename, index=False)  # Cache file
 
     return ny  # Return df
 
@@ -281,13 +291,17 @@ def final_ny():
 
 
 def basic_clean(filthy_data):
-    filthy_data = filthy_data.lower()
+    """This function takes in a string and makes everything lowercase, unicodes the data, and removes all
+    non-alphanumeric charachters and non-space characters from the string and returns it."""
+    filthy_data = filthy_data.lower()  # Convert to lowercase
+    # Remove non ASCII characters
     filthy_data = unicodedata.normalize('NFKD', filthy_data).encode('ascii', 'ignore').decode('utf-8', 'ignore')
-    clean_data = re.sub(r"[^a-z0-9'\s]", "", filthy_data)
-    return clean_data
+    clean_data = re.sub(r"[^a-z0-9'\s]", "", filthy_data)  # Remove non-alphanumeric and non-space characters
+    return clean_data  # Return data
 
 
 def tokenize(data):
+    """This function simply tokenizes the data."""
     tokenizer = ToktokTokenizer()
     data = tokenizer.tokenize(data, return_str=True)
     return data
@@ -311,37 +325,146 @@ def remove_stopwords(string, extra_words=[], exclude_words=[]):
 
 
 def lemmatize(data):
-    wnl = nltk.stem.WordNetLemmatizer()
-    lemmas = [wnl.lemmatize(word) for word in data.split()]
-    lemmatized_data = ' '.join(lemmas)
-    return lemmatized_data
+    """This function lemmatizes a body of text and returns it."""
+    wnl = nltk.stem.WordNetLemmatizer()  # Create lemmatizer object
+    lemmas = [wnl.lemmatize(word) for word in data.split()]  # Use list comprehension to create list of lemmatized words
+    lemmatized_data = ' '.join(lemmas)  # Rejoin words
+    return lemmatized_data  # Return data
 
 
 def stem(data):
-    ps = nltk.porter.PorterStemmer()
-    stems = [ps.stem(word) for word in data.split()]
-    stemmed_data = ' '.join(stems)
-    return stemmed_data
+    """This function stems a body of text and returns it."""
+    ps = nltk.porter.PorterStemmer()  # Create stem object
+    stems = [ps.stem(word) for word in data.split()]  # Use list comprehension to create list of stemmed words
+    stemmed_data = ' '.join(stems)  # Rejoin words
+    return stemmed_data  # Return data
 
 
 def cleanse(dataframe, col='', stemm=True, lem=True, extra_words=[], exclude_words=[]):
-    df = dataframe.copy()
-    df['clean'] = df[col].apply(basic_clean)
+    """This function takes in a dataframe and a column name and will create 1-3 extra columns with clean, stemmed,
+    and lemmatized data. It will also remove all stopwords."""
+    df = dataframe.copy()  # Create copy of df
+    df['clean'] = df[col].apply(basic_clean)  # Create column containing clean text
+    # Remove stopwords.
     df['clean'] = df['clean'].apply(remove_stopwords, extra_words=extra_words, exclude_words=exclude_words)
     if stemm:
-        df['stemmed'] = df.clean.apply(stem)
+        df['stemmed'] = df.clean.apply(stem)  # Creates stemmed data column
     if lem:
-        df['lemmatized'] = df.clean.apply(lemmatize)
-    return df
+        df['lemmatized'] = df.clean.apply(lemmatize)  # Creates lemmatized data column
+    return df  # Return df
 
+
+# --------------------------------------------------------------------------------------------------------
+
+# Review data functions
+
+
+def clean_api_reviews(api_data):
+    """This function cleans the api review data"""
+    df = api_data.copy()  # Create copy of data
+    cols = ['camis', 'publish_time', 'review_text', 'review_rating']  # Select columns to keep, and order them
+    df = df[cols]  # Filter columns
+    df.publish_time = pd.to_datetime(df.publish_time)  # Convert publish_time to pd.datetime object
+    return df  # Return df
+
+
+def clean_dates(data):
+    """This function takes in the scraped reviews and cleans up the relative date columns, so it is ready to be used"""
+    scrape_reviews = data.copy()  # Create copy of df
+    scrape_reviews.relative_date = scrape_reviews.relative_date.apply(lambda x: x[:-4])  # Removes ' ago' from dates
+    # Changes dates with 'a xxxxx' to '1 xxxxx'
+    scrape_reviews.relative_date = [re.sub(r'^a', '1', date) if date[0] == 'a' else date
+                                    for date in scrape_reviews.relative_date]
+    return scrape_reviews  # Return df
+
+
+def adjust_dates(scrape_reviews):
+    """This function adjusts the dates. It will estimate the actual publish date of a review based off how many
+    reviews the restaurant has for a certain year. Example: If a restaurant has 365 reviews in a year it will assume
+    an average of 1 review a day and adjsut all dates that say 'x years' accordingly"""
+    dataframes = []  # Create empty list to store dataframes
+
+    # Isolate each restaurant by id
+    for restaurant_id in scrape_reviews.id.unique():
+        # Create dataframe of ONE restaurant
+        restaurant = scrape_reviews[scrape_reviews.id == restaurant_id].copy()
+
+        # Create df of review counts per relative_date and calculate average distribution of reviews
+        place = scrape_reviews[scrape_reviews.id == restaurant_id]
+        review_counts = pd.DataFrame(place.relative_date.value_counts())
+        review_counts['increment'] = 365 / review_counts.relative_date
+
+        # Create empty list for new dates, i variable to count increments, and previous_year to track year
+        new_dates = []
+        i = 0
+        previous_year = '1 years'
+
+        for date in restaurant.relative_date:
+            if 'years' in date:  # If date is in years, function will adjust it to estimated date
+                if date != previous_year:  # When date changes from 'x years' to 'x + 1 years' counters are reset
+                    i = 0
+                    previous_year = date
+                # Calculate adjusted date
+                adjusted_date = (365 * (int(re.findall(r'\d+', date)[0]))) + (review_counts.loc[date].increment * i)
+                i += 1
+                new_dates.append(str(round(adjusted_date)))  # Append adjsuted date
+            else:
+                new_dates.append(date)  # Append normal date if date < 1 year
+        restaurant['new_date'] = new_dates  # Replace dates with new_dates
+        dataframes.append(restaurant)  # Append dataframe to list of dataframes
+    reviews = pd.concat(dataframes)  # Join all dataframes
+    return reviews  # Return joined data
+
+
+def calculate_days(data):
+    """This function will convert all times into day equivalent."""
+    reviews = data.copy()  # Create copy of df
+    new_date = []  # Create empty list
+    for date in reviews.new_date:
+        unit = re.sub(r'[^a-z]', '', date)  # Indentifies unit of time (hours, days, weeks, etc...)
+        if 'hour' in unit:
+            new_date.append('1')  # Any amount of hours will be converted to one day ago
+        elif 'day' in unit:
+            new_date.append(re.sub(r'[^0-9]', '', date))  # Appends number of days to list
+        elif 'week' in unit:
+            new_date.append(int(re.sub(r'[^0-9]', '', date))*7)  # Appends number of weeks * 7 to list
+        elif 'month' in unit:
+            new_date.append(int(re.sub(r'[^0-9]', '', date))*30)  # Appends number of months * 30 to list
+        else:
+            new_date.append(date)  # If date unit is not found, append date
+
+    reviews['newer_dates'] = new_date  # Creates new date column
+    # Calculates estimated review date based off retrieval time and adjusted relative time
+    reviews['final_date'] = [pd.to_datetime(retrieval_date) - timedelta(days=n) for retrieval_date,
+                             n in zip(reviews.retrieval_date, reviews.newer_dates.astype(int))]
+    return reviews  # Return df
+
+
+def clean_reviews(data):
+    """This function will polish off the scraped reviews dataframe."""
+    final_df = data.copy()  # Create copy of df
+    cols = ['id', 'final_date', 'caption', 'rating']  # Select columns to keep
+    final_df = final_df[cols]  # Reassign columns
+    final_df.rating = final_df.rating.astype(int)  # Change ratings to integers
+    final_df.columns = ['camis', 'publish_time', 'review_text', 'review_rating']  # Rename columns
+    return final_df  # Return df
+
+
+def cleanse_reviews(scraped_data, api_data):
+    """This function combines each step into one function to yield the final product in one function call."""
+    df = scraped_data.copy()  # Creates copy of scraped df
+    df2 = api_data.copy()  # Creates copy of api df
+
+    df2 = clean_api_reviews(df2)  # Clean the api df
+    df = clean_dates(df)  # Clean dates
+    df = adjust_dates(df)  # Adjust dates
+    df = calculate_days(df)  # Calculate estimated publish time
+    df = clean_reviews(df)  # Finish cleaning df
+    return pd.concat([df, df2])  # Return the two joined df
 
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Google Review data prep functions
-
-
-
-
 
 
 # ---------------------------------------------------------------------------------------------------------------------
