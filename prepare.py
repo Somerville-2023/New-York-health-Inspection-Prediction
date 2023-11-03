@@ -395,6 +395,7 @@ def adjust_dates(scrape_reviews):
         # Create df of review counts per relative_date and calculate average distribution of reviews
         place = scrape_reviews[scrape_reviews.id == restaurant_id]
         review_counts = pd.DataFrame(place.relative_date.value_counts())
+        review_counts = review_counts.rename(columns={review_counts.columns[0]:'relative_date'})
         review_counts['increment'] = 365 / review_counts.relative_date
 
         # Create empty list for new dates, i variable to count increments, and previous_year to track year
@@ -403,7 +404,7 @@ def adjust_dates(scrape_reviews):
         previous_year = '1 years'
 
         for date in restaurant.relative_date:
-            if 'years' in date:  # If date is in years, function will adjust it to estimated date
+            if 'year' in date:  # If date is in years, function will adjust it to estimated date
                 if date != previous_year:  # When date changes from 'x years' to 'x + 1 years' counters are reset
                     i = 0
                     previous_year = date
