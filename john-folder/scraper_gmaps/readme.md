@@ -107,11 +107,28 @@ Code snippet of the __get_driver function:
         driver_path = "/Users/jongarcia/codeup-data-science/googlemaps-scraper/chromedriver-mac-x64 BETA/chromedriver"
 ```
 
+### 8 Create files manually.
+You will manually need to create 2 files, I haven't had time to add a programmatic way to create the files in the script sorry. 
+
+Create a file named "url_list.csv" and place it in the scraper_gmaps folder. add these 2 rows which will be used for testing purposes when we run the script. 
+
+```sh
+id,url
+41073979,https://www.google.com/maps/place/?q=place_id:ChIJ79lG6ylawokRHzGFI0I0V8k
+50055023,https://www.google.com/maps/place/?q=place_id:ChIJw0ul69tcwokRUXZtYK2viEw
+41046488,https://www.google.com/maps/place/?q=place_id:ChIJN8ko6jxawokRh4mOVeF82dg
+
+```
+
+Under the scraper_gmaps folder you will see the data folder. Create an empty file named "newest_gm_reviews.csv".
+
+### 9 Run the script.
+Open the file named "scraper_notebook.ipynb" and run the first cell. select the kernel j_scraper when asked.
 
 
 OPTIONAL:
 
-### 9A. Create a password
+### 10A. Create a password
 
 
 First think of a password. Using terminal, create a hashed password:
@@ -126,8 +143,7 @@ The raw pass will be saved to your env file as torp.
 
 The hash password will be saved to the torrc file which stores the tor configuration which we will create in the next step. 
 
-  
-### 9B Create the torrc config file
+### 10B Create the torrc config file
 
 We need to create a file named torrc which will hold the tor configuration in path /usr/local/etc/tor/
 
