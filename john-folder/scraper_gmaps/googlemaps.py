@@ -25,6 +25,8 @@ import itertools
 
 import env
 
+
+
 GM_WEBPAGE = 'https://www.google.com/maps/'
 MAX_WAIT = 10
 MAX_RETRY = 5
