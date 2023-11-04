@@ -76,13 +76,11 @@ After downloading ChromeDriver Beta, you will have to unzip it. You can choose t
 ```sh
 chmod +x /path/to/chromedriver-mac-x64 BETA/chromedriver
 ```
-**Note:** Replace `/path/to/chromedriver` with the actual path to the ChromeDriver on your system. Ensure ChromeDriver is placed in the root of your scraping project folder and made executable if you are on a Unix-like system.
-
+**Note:** Replace `/path/to/chromedriver` with the actual path to the ChromeDriver on your system.
 
 You can also give it permission `manually` by going to  downloads/chromedriver-mac-x64 BETA/ and running the chromedriver. You will be asked to give it permission. 
 
 `hint` click on the **?** in the pop up window, then read and follow the blue link near the top that will take you directly to the settings page. 
-
 
 
 ### 7. Modify googlemaps.py function
@@ -92,7 +90,11 @@ The python module will need to know the location of both the installed Chrome Be
 open googlemaps.py and cmd + f and search for "__get_driver"
 function. It will be the second or third result. 
 
-Update the file paths. chrome_binary_path ***may** be the same as it uses the default install path for chrome browser beta, but driver_path for chromedriver will have to be updated. Should be something similar to /path/to/chromedriver-mac-x64 BETA/chromedriver
+Update the file paths. 
+
+Chrome_binary_path **may** not need to be updated as it uses the default install path for chrome browser beta.
+
+Driver_path for chromedriver will have to be updated. It should be something similar to /path/to/chromedriver-mac-x64 BETA/chromedriver
 
 Code snippet of the __get_driver function:
 
@@ -107,10 +109,10 @@ Code snippet of the __get_driver function:
         driver_path = "/Users/jongarcia/codeup-data-science/googlemaps-scraper/chromedriver-mac-x64 BETA/chromedriver"
 ```
 
-### 8 Create files manually.
-You will manually need to create 2 files, I haven't had time to add a programmatic way to create the files in the script sorry. 
+### 8 Create needed files manually.
+You will need to manually create 2 files, I didn't have time to add a programmatic way to create the files in the script. 
 
-Create a file named "url_list.csv" and place it in the scraper_gmaps folder. add these 2 rows which will be used for testing purposes when we run the script. 
+Create a file named "url_list.csv" and place it in the scraper_gmaps folder. add these rows which will be used for testing purposes only. 
 
 ```sh
 id,url
