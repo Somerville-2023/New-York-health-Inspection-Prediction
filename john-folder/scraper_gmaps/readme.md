@@ -127,10 +127,16 @@ Under the scraper_gmaps folder you will see the data folder. Create an empty fil
 ### 9 Run the script.
 Open the file named "scraper_notebook.ipynb" and run the first cell. select the kernel j_scraper when asked.
 
+___
+## OPTIONAL
+___
 
-OPTIONAL:
 
 ### 10A. Create a password
+
+The following steps are cumbersome, and Im not 100% sure they're required but it probably makes Tor more secure. I just don't understand why yet. 
+
+overall we are going to create a torrc file which is tor's config file. in there we will place 3 lines, one of which is a hashed password. When we run tor using the py module, it uses this config file. However nick ran it without this file and it worked fine. 
 
 
 First think of a password. Using terminal, create a hashed password:
@@ -138,54 +144,34 @@ First think of a password. Using terminal, create a hashed password:
   tor --hash-password chosen_password
   ```
 
-your raw `chosen_password` will turned into a 16 digit hash for Tor's control port authentication:. You need to keep both the raw password and the hashed password. 
+your raw `chosen_password` will turned into a 16 digit hash for Tor's control port authentication:. You need to keep both the raw password and the hashed password handy for the next steps.  
 
-
-The raw pass will be saved to your env file as torp. 
-
-The hash password will be saved to the torrc file which stores the tor configuration which we will create in the next step. 
+The hash password will be saved to the torrc config file which we will create in the next step. 
 
 ### 10B Create the torrc config file
 
-We need to create a file named torrc which will hold the tor configuration in path /usr/local/etc/tor/
+We need to create the torrc file in path /usr/local/etc/tor/. You have 2 options to create it, whichever one you choose, paste your hashed password in place of "YOUR-HASHED-PASS":
 
-You have 2 options:
-
-  - 1) find the folder manually, create the torrc file using a text editor and add these lines:
+  - option 1: find the folder manually at path /usr/local/etc/tor/. Create the torrc file using a text editor and add these lines:
       ```sh
       ControlPort 9051
       SOCKSPort 9050
       HashedControlPassword YOUR-HASHED-PASS
       ```
 
- - 3) create a new torrc file using terminal.
+ - option 2: create a new torrc file using terminal. This option will require you to enter your Mac password as it is a protected folder location and you need admin rights to create a file here. 
     ```sh
-    sudo sh -c 'echo -e "ControlPort 9051\nSOCKSPort 9050\nHashedControlPassword YOUR_PASS" > /usr/local/etc/tor/torrc'
-```
+      sudo sh -c 'echo -e "ControlPort 9051\nSOCKSPort 9050\nHashedControlPassword YOUR_PASS" > /usr/local/etc/tor/torrc'
+    ```
+    After creating the file, open the `torrc` file with VS Code for editing.
 
-Open the `torrc` file with Visual Studio Code for editing.
+    ```sh
+    code /usr/local/etc/tor/torrc
+    ```
 
-```sh
-code /usr/local/etc/tor/torrc
-```
+### 10C. Restart Tor
 
-Using terminal, create a hashed password for Tor's control port authentication:
-  ```sh
-  tor --hash-password your_chosen_password
-  ```
-  Copy the resulting hashed password. Now open the `torrc` file with Visual Studio Code for editing.
-
-```sh
-code /usr/local/etc/tor/torrc
-```
-- Paste your password
-  ```sh
-  HashedControlPassword 16:YOUR_HASHED_PASSWORD_HERE
-  ```
-  **Note:** Replace `your_chosen_password` with the password you wish to use for Tor's `HashedControlPassword` and `16:YOUR_HASHED_PASSWORD_HERE` with the actual hashed password you generated. Save your changes in the `torrc` file.
-### 6. Restart Tor
-
-start the Tor service to apply the configuration changes:
+Restart the Tor service to apply the configuration changes:
 ```sh
 brew services restart tor
 ```
