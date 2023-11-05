@@ -1,0 +1,13 @@
+prefix=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps
+exec_prefix=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps
+libdir=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps/lib
+sharedlibdir=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps/lib
+includedir=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps/include
+
+Name: zlib
+Description: zlib compression library
+Version: 1.2.13
+
+Requires:
+Libs: -L${libdir} -L${sharedlibdir} -lz
+Cflags: -I${includedir}

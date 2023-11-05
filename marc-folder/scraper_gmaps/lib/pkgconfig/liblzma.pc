@@ -1,0 +1,19 @@
+#
+# Author: Lasse Collin
+#
+# This file has been put into the public domain.
+# You can do whatever you want with this file.
+#
+
+prefix=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps
+exec_prefix=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps
+libdir=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps/lib
+includedir=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps/include
+
+Name: liblzma
+Description: General purpose data compression library
+URL: https://tukaani.org/xz/
+Version: 5.4.2
+Cflags: -I${includedir}
+Libs: -L${libdir} -llzma
+Libs.private: -pthread -lpthread

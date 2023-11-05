@@ -1,0 +1,5 @@
+#!/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps/bin/python3.12
+
+import pydoc
+if __name__ == '__main__':
+    pydoc.cli()

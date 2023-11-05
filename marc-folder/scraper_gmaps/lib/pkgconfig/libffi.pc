@@ -1,0 +1,11 @@
+prefix=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+toolexeclibdir=${libdir}
+includedir=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps/include
+
+Name: libffi
+Description: Library supporting Foreign Function Interfaces
+Version: 3.4.4
+Libs: -L${toolexeclibdir} -lffi
+Cflags: -I${includedir}

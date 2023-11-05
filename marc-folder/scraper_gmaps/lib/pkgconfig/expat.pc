@@ -1,0 +1,12 @@
+prefix=/Users/marc_aradillas/codeup-data-science/New-York-health-Inspection-Prediction/marc-folder/scraper_gmaps
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+
+Name: expat
+Version: 2.5.0
+Description: expat XML parser
+URL: https://libexpat.github.io/
+Libs: -L${libdir} -lexpat
+Libs.private: 
+Cflags: -I${includedir}
