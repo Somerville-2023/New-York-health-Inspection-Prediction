@@ -25,6 +25,8 @@ import itertools
 
 import env
 
+
+
 GM_WEBPAGE = 'https://www.google.com/maps/'
 MAX_WAIT = 10
 MAX_RETRY = 5
@@ -397,7 +399,7 @@ class GoogleMapsScraper:
     # need to use different url wrt reviews one to have all info
     def get_account(self, url):
         logging.debug(f"Starting get_account")
-        logging.debug(f"Accessing URL: {url}")
+        print(f"Accessing URL: {url}")
         self.driver.get(url)
 
         logging.debug("Attempting to click on cookie agreement...")
@@ -412,7 +414,7 @@ class GoogleMapsScraper:
         logging.debug("Parsing place data...")
         place_data = self.__parse_place(resp, url)
 
-        logging.debug(f"Place data fetched: {place_data}")
+        print(f"Place data fetched: {place_data}")
         return place_data
 
 
@@ -731,7 +733,6 @@ class GoogleMapsScraper:
     def __get_driver(self, debug=False):
         logging.debug(f"Starting __get_driver")
         logging.debug("Initializing ChromeDriver...")
-        
         # Specify the path to the Chrome Beta binary
         chrome_binary_path = "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta"
 
@@ -751,6 +752,7 @@ class GoogleMapsScraper:
 
         options.add_argument("--disable-notifications")
         options.add_argument("--accept-lang=en-GB")
+        options.add_argument("--window-size=1920,1080")
         
         # Configure the WebDriver to use the Tor SOCKS proxy
         options.add_argument("--proxy-server=socks5://127.0.0.1:9050")
@@ -762,7 +764,7 @@ class GoogleMapsScraper:
         input_driver = webdriver.Chrome(service=service, options=options)
 
         # click on google agree button so we can continue (not needed anymore)
-        input_driver.get(GM_WEBPAGE)
+        # input_driver.get(GM_WEBPAGE)
 
         logging.debug("ChromeDriver successfully initialized.")
         return input_driver

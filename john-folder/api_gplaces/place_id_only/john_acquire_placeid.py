@@ -85,6 +85,12 @@ def main(inspections_df, g_places_api_key, save_interval=10):
             api_logs.clear()
             print(f'saved progress, row #{current_row}')
             
+    # After the loop, save any remaining data
+    if places_results or api_logs:
+        save_progress(places_results, api_logs)
+        print(f'Final save for remaining data after row #{current_row}')
+
+    # Saving final data to separate files
     pd.DataFrame(places_results).to_csv('places_final.csv', index=False)
     pd.DataFrame(api_logs).to_csv('api_log_final.csv', index=False)
 

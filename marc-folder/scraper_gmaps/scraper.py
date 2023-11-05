@@ -5,9 +5,7 @@ import argparse
 import csv
 from termcolor import colored
 import time
-from bs4 import BeautifulSoup
-
-
+import os
 import requests
 from stem import Signal
 from stem.control import Controller
@@ -17,18 +15,35 @@ ind = {'most_relevant' : 0 , 'newest' : 1, 'highest_rating' : 2, 'lowest_rating'
 HEADER = ['id', 'id_review', 'caption', 'relative_date', 'retrieval_date', 'rating', 'username', 'n_review_user', 'url_user', 'r_additional'] #'n_photo_user'
 HEADER_W_SOURCE = ['id_review', 'caption', 'relative_date','retrieval_date', 'rating', 'username', 'n_review_user', 'url_user', 'r_additional', 'url_source'] #'n_photo_user'
 
+# Function to write to CSV
 def csv_writer(source_field, ind_sort_by, path='data/'):
-    outfile= ind_sort_by + '_gm_reviews.csv'
-    targetfile = open(path + outfile, mode='w', encoding='utf-8', newline='\n')
+    outfile = ind_sort_by + '_gm_reviews.csv'
+    mode = 'a' if os.path.exists(path + outfile) else 'w'
+    targetfile = open(path + outfile, mode=mode, encoding='utf-8', newline='\n')
     writer = csv.writer(targetfile, quoting=csv.QUOTE_MINIMAL)
 
-    if source_field:
-        h = HEADER_W_SOURCE
-    else:
-        h = HEADER
-    writer.writerow(h)
+    # Write header only if in write mode
+    if mode == 'w':
+        header = HEADER_W_SOURCE if source_field else HEADER
+        writer.writerow(header)
 
-    return writer
+    return writer, targetfile
+
+# Function to get the last ID from the CSV
+def get_last_id_from_csv(input_file):
+    try:
+        with open(input_file, "r", encoding='utf-8') as f1:
+            lines = f1.readlines()
+            if len(lines) > 1:  # More than just the header
+                last_line = lines[-1]
+                last_id = last_line.split(',')[0]  # Assuming the ID is in the first column
+                return last_id
+            else:
+                return None  # Only header exists, no data
+    except FileNotFoundError:
+        # If the file doesn't exist, return None
+        return None
+
 
 
 if __name__ == '__main__':
@@ -43,8 +58,11 @@ if __name__ == '__main__':
 
     args = parser.parse_args()
 
-    # store reviews in CSV file
-    writer = csv_writer(args.source, args.sort_by)
+    # Initialize CSV writer
+    writer, targetfile = csv_writer(args.source, args.sort_by)
+    input_file = 'data/' + args.sort_by + '_gm_reviews.csv'
+    last_id = get_last_id_from_csv(input_file)
+
 
 with GoogleMapsScraper(debug=args.debug) as scraper:
     print("Scraper initialized successfully.")
@@ -57,14 +75,22 @@ with GoogleMapsScraper(debug=args.debug) as scraper:
         print("Exiting: Tor connection failed.")
         exit(1)
         
+
     with open(args.i, 'r') as urls_file:
-        #This section starts the inclusion of ID
         reader = csv.DictReader(urls_file)
+        start_processing = last_id is None  # Start processing immediately if last_id is None
+        
         for row in reader:
             url_id = row['id']
-            url = row['url']
-            # Ends the inclusion of ID
+            
+            if not start_processing and url_id == last_id:
+                start_processing = True
+                continue  # Skip the URL that matches the last_id as it's already processed
+            
+            if not start_processing:
+                continue  # Skip until the last processed ID is found
 
+            url = row['url']
             # for url in urls_file:
             print(f"Processing URL: {url.strip()}")
             if args.place:
@@ -96,7 +122,6 @@ with GoogleMapsScraper(debug=args.debug) as scraper:
                             if args.source:
                                 row_data.append(url[:-1])
                             writer.writerow(row_data)
-                            print(f"Review written to CSV")#: {row_data}")
 
                         n += len(reviews)
                 else:
@@ -118,3 +143,6 @@ with GoogleMapsScraper(debug=args.debug) as scraper:
                     # Decide what to do next, possibly break out of the loop or handle the exception in some way
                     # For example, you might want to stop the entire scraping process if you can't renew the IP
                     break
+                
+    # Close the file when done with writing
+    targetfile.close()
