@@ -15,8 +15,8 @@ import unicodedata
 from datetime import timedelta
 from pytz import timezone
 
-nltk.download('wordnet')
-nltk.download('omw-1.4')
+# nltk.download('wordnet')
+# nltk.download('omw-1.4')
 
 # ---------------------------------------------------------------------------------------------------------------------
 # NY data prep functions
@@ -59,12 +59,14 @@ def clean_phones(data):
     return ny  # Return df
 
 
-def clean_zipcodes(ny):
+def clean_zipcodes(data):
     """This function cleans up all zip codes. It fills in the nulls with 0s and then converts everything to int."""
+    ny = data.copy()
     # Clean zipcodes by filling nulls with 0 and then converting to integers
+    ny = ny[ny.zipcode.notna()]
+    ny.zipcode = ny.zipcode.astype(str).apply(lambda x: re.findall(r'\d+', x)[0])
     ny.zipcode = ny.zipcode.fillna(0)
     ny.zipcode = ny.zipcode.astype(int)
-    ny = ny[ny.zipcode.notna()]
     return ny  # Return df
 
 
@@ -424,7 +426,11 @@ def calculate_days(data):
     new_date = []  # Create empty list
     for date in reviews.new_date:
         unit = re.sub(r'[^a-z]', '', date)  # Indentifies unit of time (hours, days, weeks, etc...)
-        if 'hour' in unit:
+        if 'second' in unit:
+            new_date.append('1')  # Any amount of hours will be converted to one day ago
+        elif 'minute' in unit:
+            new_date.append('1')  # Any amount of hours will be converted to one day ago
+        elif 'hour' in unit:
             new_date.append('1')  # Any amount of hours will be converted to one day ago
         elif 'day' in unit:
             new_date.append(re.sub(r'[^0-9]', '', date))  # Appends number of days to list
@@ -479,18 +485,17 @@ def reviews_pipeline(df):
     return df
 
 
-def cleanse_reviews(scraped_data, api_data):
+def cleanse_reviews(scraped_data, api_data=None):
     """This function combines each step into one function to yield the final product in one function call."""
     df = scraped_data.copy()  # Creates copy of scraped df
-    df2 = api_data.copy()  # Creates copy of api df
-
-    df2 = clean_api_reviews(df2)  # Clean the api df
-
     df = clean_dates(df)  # Clean dates
     df = adjust_dates(df)  # Adjust dates
     df = calculate_days(df)  # Calculate estimated publish time
     df = clean_reviews(df)  # Finish cleaning df
-    df = pd.concat([df, df2])  # Return the two joined df
+    if api_data is not None:
+        df2 = api_data.copy()  # Creates copy of api df
+        df2 = clean_api_reviews(df2)  # Clean the api df
+        df = pd.concat([df, df2])  # Return the two joined df
     df = reviews_pipeline(df)  # Adjust dates
     return df  # Return the two joined df
 
@@ -542,8 +547,46 @@ def ny_pipeline(inspections_df, reviews_df):
     inspections_df['concatenated_reviews'] = inspections_df.apply(lambda row: ny_concat_reviews(row, reviews_df),
                                                                   axis=1)
     return inspections_df
-# ---------------------------------------------------------------------------------------------------------------------
-# Google Review data prep functions
+
+
+def acquire_ny_reviews(include_api=False):
+    if os.path.isfile('ny_reviews.csv'):  # Checks for local file
+        print('reviews.csv found!')
+        return pd.read_csv('ny_reviews.csv')  # Returns local file if there is one
+
+    if os.path.isfile('clean_ny.csv'):  # Checks for local file
+        ny = final_ny()  # Returns local file if there is one
+        print('clean_ny.csv found!')
+    else:
+        print('clean_ny.csv not found! Requesting data...')
+        ny = final_ny()  # Returns local file if there is one
+        print('Data acquired, and cached.')
+
+    if os.path.isfile('scraped_reviews.csv'):  # Checks for local file
+        scraped_reviews = pd.read_csv('scraped_reviews.csv')  # Returns local file if there is one
+        print('scraped_reviews.csv found!')
+    else:
+        print('scraped_reviews.csv NOT found!')
+
+    if include_api:
+        if os.path.isfile('api_reviews.csv'):  # Checks for local file
+            api_reviews = pd.read_csv('api_reviews.csv')  # Returns local file if there is one
+            print('api_reviews.csv found!')
+        else:
+            print('api_reviews.csv NOT found!')
+    else:
+        api_reviews = None
+
+    reviews = cleanse_reviews(scraped_reviews, api_reviews)
+
+    ny_reviews = ny_pipeline(ny, reviews)
+
+    ny_reviews.to_csv('ny_reviews.csv', index=False)  # Cache file
+    print('reviews.csv cached')
+
+
+
+    return ny_reviews
 
 
 # ---------------------------------------------------------------------------------------------------------------------
