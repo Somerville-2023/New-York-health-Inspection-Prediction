@@ -63,6 +63,7 @@ class GoogleMapsScraper:
             try:
                 with Controller.from_port(port=9051) as controller:
                     controller.authenticate(password=env.torp)  # Authenticate with the password
+                    print("successfully authenticate")
                     controller.signal(Signal.NEWNYM)  # Send the signal to get a new Tor identity
                     time.sleep(controller.get_newnym_wait())  # Wait the recommended amount of time
 
@@ -96,14 +97,14 @@ class GoogleMapsScraper:
     def __get_ip_without_tor(self):
         response = requests.get('http://httpbin.org/ip')
         ip_without_tor = response.json()['origin']
-        logging.debug("IP without Tor:", ip_without_tor)
+        print("IP without Tor:", ip_without_tor)
         return ip_without_tor
 
     def __get_ip_with_tor(self):
         self.driver.get('http://httpbin.org/ip')
         response_text = self.driver.find_element(By.TAG_NAME, 'pre').text
         ip_with_tor = eval(response_text)['origin']
-        logging.debug("IP with Tor:", ip_with_tor)
+        print("IP with Tor:", ip_with_tor)
         return ip_with_tor
 
     def test_tor_connection(self):
@@ -121,9 +122,13 @@ class GoogleMapsScraper:
         # Check if the IP addresses are different
         if ip_without_tor != ip_with_tor:
             print("IP masking successful: Your IP address is being masked by Tor.")
+            print(f"Real IP: {ip_without_tor}")
+            print(f"Tor IP: {ip_with_tor}")
             return True
         else:
             print("IP masking unsuccessful: Your IP address is not being masked by Tor.")
+            print(f"Real IP: {ip_without_tor}")
+            print(f"Tor IP: {ip_with_tor}")
             return False
 
 
@@ -171,9 +176,9 @@ class GoogleMapsScraper:
             reviews_text = reviews_element.text.split('(')[1].replace(',', '').replace(')', '')
             # If the text does not contain numbers, this will raise a ValueError
             total_reviews = int(reviews_text)
-            logging.debug(f"Total number of reviews found: {total_reviews}")
+            print(f"Total number of reviews found: {total_reviews}")
         except (NoSuchElementException, IndexError, ValueError) as e:
-            logging.debug("No number of reviews found or element not present. Error: {}".format(e))
+            print("Reviews element not present, may not be a place. Error: {}".format(e))
             return -1
 
         wait = WebDriverWait(self.driver, MAX_WAIT)
@@ -191,7 +196,7 @@ class GoogleMapsScraper:
 
                 clicked = True
                 time.sleep(3)
-                logging.debug("Sorting button clicked successfully.")
+                print("Sorting button clicked successfully.")
             except Exception as e:
                 tries += 1
                 logging.debug(f"Failed to click sorting button on attempt {tries}. Retrying...")
@@ -358,6 +363,7 @@ class GoogleMapsScraper:
         # scroll to load reviews
         # self.__scroll()
         self.scroll_reviews()
+        print('Scrolled done')
 
         # wait for other reviews to load (ajax)
         wait_time = 4 + (3 if offset > 0 else 0)
@@ -399,7 +405,7 @@ class GoogleMapsScraper:
     # need to use different url wrt reviews one to have all info
     def get_account(self, url):
         logging.debug(f"Starting get_account")
-        logging.debug(f"Accessing URL: {url}")
+        print(f"Accessing URL: {url}")
         self.driver.get(url)
 
         logging.debug("Attempting to click on cookie agreement...")
@@ -414,7 +420,7 @@ class GoogleMapsScraper:
         logging.debug("Parsing place data...")
         place_data = self.__parse_place(resp, url)
 
-        logging.debug(f"Place data fetched: {place_data}")
+        print(f"Place data fetched: {place_data}")
         return place_data
 
 
@@ -685,7 +691,7 @@ class GoogleMapsScraper:
             # Within the parent, locating the scrollable div with the specified classes
             scrollable_div = parent_div.find_element(By.CSS_SELECTOR, '.m6QErb.DxyBCb.kA9KIf.dS8AEf')
 
-            max_scrolls = 10
+            max_scrolls = 25
             min_scrolls = 3  # Ensure a minimum number of scrolls
             for i in range(max_scrolls):
                 last_height = self.driver.execute_script("return arguments[0].scrollHeight", scrollable_div)
@@ -693,14 +699,14 @@ class GoogleMapsScraper:
                 
                 if i >= min_scrolls - 1:  # Apply dynamic waiting after minimum scrolls
                     try:
-                        WebDriverWait(self.driver, 20).until(
+                        WebDriverWait(self.driver, 6).until(
                             lambda d: d.execute_script("return arguments[0].scrollHeight", scrollable_div) > last_height
                         )
                     except TimeoutException:
                         logging.debug(f"No new content loaded after scroll {i+1}.")
                         break
 
-                logging.debug(f"Scroll {i+1}/{max_scrolls} completed. Content height: {last_height}")
+                print(f"Scroll {i+1}/{max_scrolls} completed. Content height: {last_height}")
 
             logging.debug("Successfully scrolled in scroll_reviews")
         except Exception as e:
@@ -752,6 +758,7 @@ class GoogleMapsScraper:
 
         options.add_argument("--disable-notifications")
         options.add_argument("--accept-lang=en-GB")
+        options.add_argument("--window-size=1920,1080")
         
         # Configure the WebDriver to use the Tor SOCKS proxy
         options.add_argument("--proxy-server=socks5://127.0.0.1:9050")
@@ -763,7 +770,7 @@ class GoogleMapsScraper:
         input_driver = webdriver.Chrome(service=service, options=options)
 
         # click on google agree button so we can continue (not needed anymore)
-        input_driver.get(GM_WEBPAGE)
+        # input_driver.get(GM_WEBPAGE)
 
         logging.debug("ChromeDriver successfully initialized.")
         return input_driver

@@ -11,6 +11,7 @@ from stem import Signal
 from stem.control import Controller
 
 
+
 ind = {'most_relevant' : 0 , 'newest' : 1, 'highest_rating' : 2, 'lowest_rating' : 3 }
 HEADER = ['id', 'id_review', 'caption', 'relative_date', 'retrieval_date', 'rating', 'username', 'n_review_user', 'url_user', 'r_additional'] #'n_photo_user'
 HEADER_W_SOURCE = ['id_review', 'caption', 'relative_date','retrieval_date', 'rating', 'username', 'n_review_user', 'url_user', 'r_additional', 'url_source'] #'n_photo_user'
