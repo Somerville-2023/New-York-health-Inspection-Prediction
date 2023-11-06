@@ -550,43 +550,46 @@ def ny_pipeline(inspections_df, reviews_df):
 
 
 def acquire_ny_reviews(include_api=False):
-    """This function combines the entire pipeline into one function. It will look for ny_reviews"""
+    """This function combines the entire pipeline into one function. It will look for ny_reviews, which is the df
+    of the combined clean ny inspection data and review data, if that isn't found it will then begin creating that df"""
     if os.path.isfile('ny_reviews.csv'):  # Checks for local file
-        print('reviews.csv found!')
+        print('ny_reviews.csv found!')
         return pd.read_csv('ny_reviews.csv')  # Returns local file if there is one
 
     if os.path.isfile('clean_ny.csv'):  # Checks for local file
-        ny = final_ny()  # Returns local file if there is one
+        ny = final_ny()  # If file is found, it is read and assigned to ny variable
         print('clean_ny.csv found!')
     else:
-        print('clean_ny.csv not found! Requesting data...')
-        ny = final_ny()  # Returns local file if there is one
-        print('Data acquired, and cached.')
+        print('clean_ny.csv not found! Requesting data...')  # File is requested via api if not found
+        ny = final_ny()
+        print('Data acquired, and cached.')  # File is acquired and processed and cached
 
     if os.path.isfile('scraped_reviews.csv'):  # Checks for local file
-        scraped_reviews = pd.read_csv('scraped_reviews.csv')  # Returns local file if there is one
-        print('scraped_reviews.csv found!')
+        scraped_reviews = pd.read_csv('scraped_reviews.csv')  # Reads local file is there is one
+        print('scraped_reviews.csv found!')  # Tells user file is found
     else:
-        print('scraped_reviews.csv NOT found!')
+        print('scraped_reviews.csv NOT found!')  # Function will end if it cannot find the scraped reviews data
+        raise Exception('Function needs either scraped_reviews.csv or ny_reviews.csv saved locally to continue.')
 
-    if include_api:
+    if include_api:  # Function will read api data if include api is true
         if os.path.isfile('api_reviews.csv'):  # Checks for local file
-            api_reviews = pd.read_csv('api_reviews.csv')  # Returns local file if there is one
+            api_reviews = pd.read_csv('api_reviews.csv')  # Assigns local file if there is one
             print('api_reviews.csv found!')
         else:
             print('api_reviews.csv NOT found!')
+            raise Exception('Function could not find api_reviews.csv saved locally.')
     else:
-        api_reviews = None
+        api_reviews = None  # If include_api is false api reviews is assigned no value
 
-    reviews = cleanse_reviews(scraped_reviews, api_reviews)
+    reviews = cleanse_reviews(scraped_reviews, api_reviews)  # Cleans and concatenates reviews together into one df
 
+    # Appends review data to ny inspection data based off review and inspection date
     ny_reviews = ny_pipeline(ny, reviews)
 
     ny_reviews.to_csv('ny_reviews.csv', index=False)  # Cache file
-    print('reviews.csv cached')
+    print('reviews.csv cached')  # Tells user reviews csv was cached
 
-    return ny_reviews
-
+    return ny_reviews  # Return df
 
 # ---------------------------------------------------------------------------------------------------------------------
 # Census data prep functions
