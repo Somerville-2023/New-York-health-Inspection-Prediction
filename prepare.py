@@ -3,7 +3,7 @@ import numpy as np
 import os
 
 import re
-import nick_acquire as a
+import acquire as a
 
 # NLP imports
 import nltk
