@@ -97,14 +97,14 @@ class GoogleMapsScraper:
     def __get_ip_without_tor(self):
         response = requests.get('http://httpbin.org/ip')
         ip_without_tor = response.json()['origin']
-        logging.debug("IP without Tor:", ip_without_tor)
+        print("IP without Tor:", ip_without_tor)
         return ip_without_tor
 
     def __get_ip_with_tor(self):
         self.driver.get('http://httpbin.org/ip')
         response_text = self.driver.find_element(By.TAG_NAME, 'pre').text
         ip_with_tor = eval(response_text)['origin']
-        logging.debug("IP with Tor:", ip_with_tor)
+        print("IP with Tor:", ip_with_tor)
         return ip_with_tor
 
     def test_tor_connection(self):
@@ -176,9 +176,9 @@ class GoogleMapsScraper:
             reviews_text = reviews_element.text.split('(')[1].replace(',', '').replace(')', '')
             # If the text does not contain numbers, this will raise a ValueError
             total_reviews = int(reviews_text)
-            logging.debug(f"Total number of reviews found: {total_reviews}")
+            print(f"Total number of reviews found: {total_reviews}")
         except (NoSuchElementException, IndexError, ValueError) as e:
-            logging.debug("No number of reviews found or element not present. Error: {}".format(e))
+            print("Reviews element not present, may not be a place. Error: {}".format(e))
             return -1
 
         wait = WebDriverWait(self.driver, MAX_WAIT)
@@ -196,7 +196,7 @@ class GoogleMapsScraper:
 
                 clicked = True
                 time.sleep(3)
-                logging.debug("Sorting button clicked successfully.")
+                print("Sorting button clicked successfully.")
             except Exception as e:
                 tries += 1
                 logging.debug(f"Failed to click sorting button on attempt {tries}. Retrying...")
@@ -363,6 +363,7 @@ class GoogleMapsScraper:
         # scroll to load reviews
         # self.__scroll()
         self.scroll_reviews()
+        print('Scrolled done')
 
         # wait for other reviews to load (ajax)
         wait_time = 4 + (3 if offset > 0 else 0)
@@ -690,7 +691,7 @@ class GoogleMapsScraper:
             # Within the parent, locating the scrollable div with the specified classes
             scrollable_div = parent_div.find_element(By.CSS_SELECTOR, '.m6QErb.DxyBCb.kA9KIf.dS8AEf')
 
-            max_scrolls = 10
+            max_scrolls = 25
             min_scrolls = 3  # Ensure a minimum number of scrolls
             for i in range(max_scrolls):
                 last_height = self.driver.execute_script("return arguments[0].scrollHeight", scrollable_div)
@@ -698,14 +699,14 @@ class GoogleMapsScraper:
                 
                 if i >= min_scrolls - 1:  # Apply dynamic waiting after minimum scrolls
                     try:
-                        WebDriverWait(self.driver, 20).until(
+                        WebDriverWait(self.driver, 6).until(
                             lambda d: d.execute_script("return arguments[0].scrollHeight", scrollable_div) > last_height
                         )
                     except TimeoutException:
                         logging.debug(f"No new content loaded after scroll {i+1}.")
                         break
 
-                logging.debug(f"Scroll {i+1}/{max_scrolls} completed. Content height: {last_height}")
+                print(f"Scroll {i+1}/{max_scrolls} completed. Content height: {last_height}")
 
             logging.debug("Successfully scrolled in scroll_reviews")
         except Exception as e:
