@@ -25,8 +25,6 @@ import itertools
 
 import env
 
-
-
 GM_WEBPAGE = 'https://www.google.com/maps/'
 MAX_WAIT = 10
 MAX_RETRY = 5
@@ -706,7 +704,7 @@ class GoogleMapsScraper:
                         logging.debug(f"No new content loaded after scroll {i+1}.")
                         break
 
-                print(f"Scroll {i+1}/{max_scrolls} completed. Content height: {last_height}")
+                # print(f"Scroll {i+1}/{max_scrolls} completed. Content height: {last_height}")
 
             logging.debug("Successfully scrolled in scroll_reviews")
         except Exception as e:
