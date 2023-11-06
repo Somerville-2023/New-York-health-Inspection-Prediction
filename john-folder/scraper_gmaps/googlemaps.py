@@ -63,6 +63,7 @@ class GoogleMapsScraper:
             try:
                 with Controller.from_port(port=9051) as controller:
                     controller.authenticate(password=env.torp)  # Authenticate with the password
+                    print("successfully authenticate")
                     controller.signal(Signal.NEWNYM)  # Send the signal to get a new Tor identity
                     time.sleep(controller.get_newnym_wait())  # Wait the recommended amount of time
 
@@ -121,9 +122,13 @@ class GoogleMapsScraper:
         # Check if the IP addresses are different
         if ip_without_tor != ip_with_tor:
             print("IP masking successful: Your IP address is being masked by Tor.")
+            print(f"Real IP: {ip_without_tor}")
+            print(f"Tor IP: {ip_with_tor}")
             return True
         else:
             print("IP masking unsuccessful: Your IP address is not being masked by Tor.")
+            print(f"Real IP: {ip_without_tor}")
+            print(f"Tor IP: {ip_with_tor}")
             return False
 
 
