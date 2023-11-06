@@ -21,5 +21,4 @@ def acquire_ny():
         results = client.get("43nn-pn8j", limit=500_000)
         # Convert to pandas DataFrame
         results_df = pd.DataFrame.from_records(results)
-        results_df.to_csv(filename, index=False)  # Cache file
     return results_df  # Return file
