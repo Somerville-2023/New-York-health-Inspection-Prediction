@@ -1,0 +1,59 @@
+
+Baseline Accuracy
+==================================================
+
+
+Train baseline accuracy: 59%
+
+
+Validation baseline accuracy: 62%
+
+
+
+
+
+Logisitic Regression Model (Hyperparameters Used)
+==================================================
+
+Train Accuracy: 0.81
+
+
+Validation Accuracy: 0.54
+
+
+
+
+
+KNearest Neighbors (Hyperparameters Used)
+==================================================
+
+Train Accuracy: 0.99
+
+
+Validation Accuracy: 0.32
+
+
+
+
+
+XGBClassifier Model (Hyperparameters Used)
+==================================================
+
+Train Accuracy: 0.75
+
+
+
+
+
+Validation Accuracy: 0.60
+
+Final Model Logisitic Regression with Hyperparameter tuning
+==================================================
+
+Train Accuracy: 0.81
+
+
+Validation Accuracy: 0.54
+
+
+Test Accuracy: 0.50
