@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sn
 
 from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.model_selection import train_test_split
+from sklearn.model_selection import train_test_split, GridSearchCV
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier
@@ -31,30 +31,45 @@ from sklearn.metrics import classification_report as class_rep
 
 def baseline():
 
+    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
+
     # Load and preprocess your data
     ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
-    ny_reviews = ny_reviews.rename(columns={'concatenated_reviews': 'reviews'})
     ny_reviews = ny_reviews.dropna()
-    
-    X = ny_reviews.reviews # add new features
-    y = ny_reviews.grade
-    
+    ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
+
+    X = ny_reviews.reviews  # Features
+    y = ny_reviews.grade  # Target labels
+
     # Split the data into training, validation, and test sets
     X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7, random_state=42)
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
-    
+
     tfidf = TfidfVectorizer()
     X_train_tfidf = tfidf.fit_transform(X_train)
     X_val_tfidf = tfidf.transform(X_val)
     X_test_tfidf = tfidf.transform(X_test)
 
-    train_baseline_acc = y_train.value_counts().max() / y_train.shape[0] * 100    
-    val_baseline_acc = y_val.value_counts().max() / y_val.shape[0] * 100
+    train_baseline_acc = y_train.value_counts().min() / y_train.shape[0] * 100
+    val_baseline_acc = y_val.value_counts().min() / y_val.shape[0] * 100
 
-    print(f'\nBaseline Accuracy')
+    # Get the minority class label
+    minority_class = y_train.value_counts().idxmin()
+
+    # Predict using the minority class for both training and validation
+    y_train_pred = [minority_class] * len(y_train)
+    y_val_pred = [minority_class] * len(y_val)
+
+    train_classification_report = class_rep(y_train, y_train_pred)
+    val_classification_report = class_rep(y_val, y_val_pred)
+
+    print(f'\nBaseline Model (Minority Class)')
     print(f'==================================================')
-    print(f'\n\nTrain baseline accuracy: {round(train_baseline_acc)}%\n')
-    print(f'\nValidation baseline accuracy: {round(val_baseline_acc)}%\n')
+    print(f'\nTrain Accuracy: {train_baseline_acc:.2f}%\n')
+    print(f'\nValidation Accuracy: {val_baseline_acc:.2f}%\n')
+    print(f'\nClassification Report for Training Set:\n{train_classification_report}\n')
+    print(f'\nClassification Report for Validation Set:\n{val_classification_report}\n')
+
 
 
 
@@ -69,10 +84,16 @@ def baseline():
 # ===========================================================================================================================================
 
 def model_1():
+
+    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
+
+    
     # Load and preprocess your data
     ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
-    ny_reviews = ny_reviews.rename(columns={'concatenated_reviews': 'reviews'})
     ny_reviews = ny_reviews.dropna()
+    ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
+
+
 
     X = ny_reviews.reviews # add new features
     y = ny_reviews.grade
@@ -88,27 +109,28 @@ def model_1():
     X_test_tfidf = tfidf.transform(X_test)
 
     # Train a logistic regression model
-    lm = LogisticRegression(
-        penalty='l2',
-        C=1.0,
-        fit_intercept=False,
-        class_weight='balanced',
-        solver='liblinear',
-        max_iter=100,
-        random_state=42
-    )
+    lm = LogisticRegression(random_state=42)
     lm.fit(X_train_tfidf, y_train)
 
     # Calculate accuracy scores
     y_train_res = pd.DataFrame({'actual': y_train, 'preds': lm.predict(X_train_tfidf)})
     y_val_res = pd.DataFrame({'actual': y_val, 'preds': lm.predict(X_val_tfidf)})
+
+    y_train_pred = lm.predict(X_train_tfidf)
+    y_val_pred = lm.predict(X_val_tfidf)
+
     train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
     val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
 
-    print(f'\nLogisitic Regression Model (Hyperparameters Used)')
+    train_classification_report = class_rep(y_train, y_train_pred)
+    val_classification_report = class_rep(y_val, y_val_pred)
+
+    print(f'\nLogisitic Regression Model')
     print(f'==================================================')
     print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
     print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
+    print(f'\nClassification Report for Training Set:\n{train_classification_report}\n')
+    print(f'\nClassification Report for Validation Set:\n{val_classification_report}\n')
 
 
 
@@ -122,10 +144,13 @@ def model_1():
 # ===========================================================================================================================================
 
 def model_2():
+    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
+
+    
     # Load and preprocess your data
     ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
-    ny_reviews = ny_reviews.rename(columns={'concatenated_reviews': 'reviews'})
     ny_reviews = ny_reviews.dropna()
+    ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
 
     X = ny_reviews.reviews# add new features
     y = ny_reviews.grade
@@ -154,13 +179,22 @@ def model_2():
     # Calculate accuracy scores
     y_train_res = pd.DataFrame({'actual': y_train, 'preds': knn.predict(X_train_tfidf)})
     y_val_res = pd.DataFrame({'actual': y_val, 'preds': knn.predict(X_val_tfidf)})
+
+    y_train_pred = knn.predict(X_train_tfidf)
+    y_val_pred = knn.predict(X_val_tfidf)
+    
     train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
     val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
+    
+    train_classification_report = class_rep(y_train, y_train_pred)
+    val_classification_report = class_rep(y_val, y_val_pred)
 
     print(f'\nKNearest Neighbors (Hyperparameters Used)')
     print(f'==================================================')
     print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
     print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
+    print(f'\nClassification Report for Training Set:\n{train_classification_report}\n')
+    print(f'\nClassification Report for Validation Set:\n{val_classification_report}\n')
 
 
 
@@ -168,12 +202,18 @@ def model_2():
 
 # ===========================================================================================================================================
 
+target_names = ['Fail', 'Pass']
+
 def model_3():
 
     # Load and preprocess your data
     ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
-    ny_reviews = ny_reviews.rename(columns={'concatenated_reviews': 'reviews'})
     ny_reviews = ny_reviews.dropna()
+
+    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
+
+
+    ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
     
     # Initialize the label encoder
     label_encoder = LabelEncoder()
@@ -201,20 +241,34 @@ def model_3():
     preds = bst.predict(X_val_tfidf)
     
     # If you want to decode the predicted labels back to their original class names:
-    preds_decoded = label_encoder.inverse_transform(preds)
+    # Convert one-hot encoded labels back to original class labels
+    preds_decoded = label_encoder.inverse_transform(preds.argmax(axis=1))
 
-    # Calculate accuracy scores
-    y_train_res = pd.DataFrame({'actual': y_train, 'preds': bst.predict(X_train_tfidf)})
-    y_val_res = pd.DataFrame({'actual': y_val, 'preds': bst.predict(X_val_tfidf)})
+    # Calculate scores
+    # Flatten the predictions to a 1D array
+    train_preds = bst.predict(X_train_tfidf)
+    train_preds_flattened = train_preds.argmax(axis=1)
+    
+    y_train_res = pd.DataFrame({'actual': y_train, 'preds': train_preds_flattened})
+    
+    val_preds = bst.predict(X_val_tfidf)
+    val_preds_flattened = val_preds.argmax(axis=1)
+    
+    y_val_res = pd.DataFrame({'actual': y_val, 'preds': val_preds_flattened})
+    
     train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
     val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
+    
+    train_classification_report = class_rep(y_train, y_train_res['preds'], target_names=target_names)
+    val_classification_report = class_rep(y_val, y_val_res['preds'], target_names=target_names)
 
     print(f'\nXGBClassifier Model (Hyperparameters Used)')
     print(f'==================================================')
     print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
     print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
 
-
+    print(f'\nClassification Report for Training Set:\n{train_classification_report}\n')
+    print(f'\nClassification Report for Validation Set:\n{val_classification_report}\n')
 
 
 
@@ -228,10 +282,14 @@ def model_3():
 # ===========================================================================================================================================
 
 def model_4():
+    
+    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
+
+    
     # Load and preprocess your data
     ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
-    ny_reviews = ny_reviews.rename(columns={'concatenated_reviews': 'reviews'})
     ny_reviews = ny_reviews.dropna()
+    ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
 
     X = ny_reviews.reviews # add new features
     y = ny_reviews.grade
@@ -242,7 +300,7 @@ def model_4():
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
     # Create TF-IDF vectors
-    tfidf = TfidfVectorizer()
+    tfidf = TfidfVectorizer(use_idf=True)
     X_train_tfidf = tfidf.fit_transform(X_train)
     X_val_tfidf = tfidf.transform(X_val)
     X_test_tfidf = tfidf.transform(X_test)
@@ -259,16 +317,122 @@ def model_4():
     
     lm.fit(X_train_tfidf, y_train)
 
-    # Calculate accuracy scores
+     # Calculate scores
     y_train_res = pd.DataFrame({'actual': y_train, 'preds': lm.predict(X_train_tfidf)})
     y_val_res = pd.DataFrame({'actual': y_val, 'preds': lm.predict(X_val_tfidf)})
-    y_test_res = pd.DataFrame({'actual': y_test, 'preds': lm.predict(X_test_tfidf)})
+
+    y_train_pred = lm.predict(X_train_tfidf)
+    y_val_pred = lm.predict(X_val_tfidf)
+
     train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
     val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
-    test_accuracy = accuracy_score(y_test_res['actual'], y_test_res['preds'])
 
-    print(f'\nFinal Model Logisitic Regression with Hyperparameter tuning')
+    train_classification_report = class_rep(y_train, y_train_pred)
+    val_classification_report = class_rep(y_val, y_val_pred)
+
+    print(f'\nLogisitic Regression Model (Hyperparameters Used)')
     print(f'==================================================')
     print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
     print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
-    print(f'\nTest Accuracy: {test_accuracy:.2f}\n')
+    print(f'\nClassification Report for Training Set:\n{train_classification_report}\n')
+    print(f'\nClassification Report for Validation Set:\n{val_classification_report}\n')
+
+
+
+
+
+
+
+# rf classifier/Gradient Boosting function  ===========================================================================================================================================
+
+from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+
+def model_5():
+    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
+
+    # Load and preprocess your data
+    ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
+    ny_reviews = ny_reviews.dropna()
+    ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
+
+    X = ny_reviews.reviews
+    y = ny_reviews.grade
+
+    # Split the data into training, validation, and test sets
+    X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7, random_state=42)
+    X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
+
+    # Create TF-IDF vectors
+    tfidf = TfidfVectorizer(use_idf=True)
+    X_train_tfidf = tfidf.fit_transform(X_train)
+    X_val_tfidf = tfidf.transform(X_val)
+    X_test_tfidf = tfidf.transform(X_test)
+
+    # Define the hyperparameter grid for Random Forest
+    rf_param_grid = {
+        'n_estimators': [50, 100, 200],
+        'max_depth': [None, 10, 20],
+        'min_samples_split': [2, 5, 10],
+        'min_samples_leaf': [1, 2, 4],
+        'max_features': ['sqrt', 'log2'],
+    }
+
+    # Create a Random Forest model
+    rf_model = RandomForestClassifier(random_state=42, class_weight='balanced')
+
+    # Perform grid search
+    rf_grid_search = GridSearchCV(estimator=rf_model, param_grid=rf_param_grid, cv=3, scoring='accuracy')
+    rf_grid_search.fit(X_train_tfidf, y_train)
+
+    # Get the best Random Forest model
+    rf = rf_grid_search.best_estimator_
+    
+    # Define the hyperparameter grid for Gradient Boosting
+    gb_param_grid = {
+        'n_estimators': [50, 100, 200],
+        'learning_rate': [0.01, 0.1, 0.2],
+        'max_depth': [3, 4, 5],
+        'min_samples_split': [2, 3, 4],
+        'min_samples_leaf': [1, 2, 3],
+        'subsample': [0.8, 0.9, 1.0],
+    }
+
+    # Create a Gradient Boosting model
+    gb_model = GradientBoostingClassifier(random_state=42)
+
+    # Perform grid search
+    gb_grid_search = GridSearchCV(estimator=gb_model, param_grid=gb_param_grid, cv=3, scoring='accuracy')
+    gb_grid_search.fit(X_train_tfidf, y_train)
+
+    # Get the best Gradient Boosting model
+    gb = gb_grid_search.best_estimator
+
+    # Calculate scores for Random Forest
+    y_train_pred_rf = rf.predict(X_train_tfidf)
+    y_val_pred_rf = rf.predict(X_val_tfidf)
+
+    train_accuracy_rf = accuracy_score(y_train, y_train_pred_rf)
+    val_accuracy_rf = accuracy_score(y_val, y_val_pred_rf)
+
+    # Calculate scores for Gradient Boosting
+    y_train_pred_gb = gb.predict(X_train_tfidf)
+    y_val_pred_gb = gb.predict(X_val_tfidf)
+
+    train_accuracy_gb = accuracy_score(y_train, y_train_pred_gb)
+    val_accuracy_gb = accuracy_score(y_val, y_val_pred_gb)
+
+    # Print classification reports
+    print(f'\nRandom Forest Model (Hyperparameters Used)')
+    print(f'==================================================')
+    print(f'\nTrain Accuracy: {train_accuracy_rf:.2f}\n')
+    print(f'\nValidation Accuracy: {val_accuracy_rf:.2f}\n')
+    print(f'\nClassification Report for Random Forest (Training Set):\n{classification_report(y_train, y_train_pred_rf)}\n')
+    print(f'\nClassification Report for Random Forest (Validation Set):\n{classification_report(y_val, y_val_pred_rf)}\n')
+
+    print(f'\nGradient Boosting Model (Hyperparameters Used)')
+    print(f'==================================================')
+    print(f'\nTrain Accuracy: {train_accuracy_gb:.2f}\n')
+    print(f'\nValidation Accuracy: {val_accuracy_gb:.2f}\n')
+    print(f'\nClassification Report for Gradient Boosting (Training Set):\n{classification_report(y_train, y_train_pred_gb)}\n')
+    print(f'\nClassification Report for Gradient Boosting (Validation Set):\n{classification_report(y_val, y_val_pred_gb)}\n')
+
