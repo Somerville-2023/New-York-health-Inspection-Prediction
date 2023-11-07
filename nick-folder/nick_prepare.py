@@ -11,7 +11,6 @@ from nltk.tokenize.toktok import ToktokTokenizer
 from nltk.corpus import stopwords
 import unicodedata
 
-
 from datetime import timedelta
 from pytz import timezone
 
@@ -504,10 +503,10 @@ def clean_reviews(data):
     """This function will polish off the scraped reviews dataframe."""
     final_df = data.copy()  # Create copy of df
     # Columns to keep
-    cols = ['id', 'final_date', 'caption', 'rating','service', 'atmosphere', 'food', 'price_per_person']
+    cols = ['id', 'final_date', 'caption', 'rating', 'service', 'atmosphere', 'food', 'price_per_person']
     final_df = final_df[cols]  # Reassign columns
     final_df.rating = final_df.rating.astype(int)  # Change ratings to integers
-    final_df.columns = ['camis', 'publish_time', 'review_text', 'review_rating','service', 'atmosphere', 'food',
+    final_df.columns = ['camis', 'publish_time', 'review_text', 'review_rating', 'service', 'atmosphere', 'food',
                         'price_per_person']  # Rename columns
     return final_df  # Return df
 
