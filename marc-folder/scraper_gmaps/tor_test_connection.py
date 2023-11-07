@@ -13,7 +13,7 @@ def get_driver(debug=False):
 
     # Specify the path to Chrome Beta and ChromeDriver
     chrome_binary_path = "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta"
-    driver_path = "/Users/jongarcia/codeup-data-science/googlemaps-scraper/chromedriver-mac-x64 BETA/chromedriver"
+    driver_path = "/usr/local/bin/chromedriver"
 
     # Set up Chrome options
     options = Options()
