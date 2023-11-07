@@ -4,6 +4,10 @@ from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from selenium.webdriver.common.by import By
+from stem import Signal
+from stem.control import Controller
+import env
+import time
 
 # Function to create and return the driver
 def get_driver(debug=False):
@@ -13,7 +17,7 @@ def get_driver(debug=False):
 
     # Specify the path to Chrome Beta and ChromeDriver
     chrome_binary_path = "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta"
-    driver_path = "/Users/jongarcia/codeup-data-science/googlemaps-scraper/chromedriver-mac-x64 BETA/chromedriver"
+    driver_path = "/Users/jongarcia/Downloads/chromedriver-mac-x64 BETA/chromedriver" 
 
     # Set up Chrome options
     options = Options()
@@ -68,8 +72,22 @@ def test_tor_connection(driver):
         print(f"Tor IP: {ip_with_tor}")
         return False
 
+# Function to request a new IP from Tor
+def request_new_ip():
+    with Controller.from_port(port=9051) as controller:
+        controller.authenticate(password=env.torp)  # Replace with your Tor control password
+        controller.signal(Signal.NEWNYM)
+        print("New Tor connection processed")
+
 # Main execution
 if __name__ == "__main__":
     driver = get_driver(debug=True)
     tor_connection_test_result = test_tor_connection(driver)
+    
+    if tor_connection_test_result:
+        print("Requesting new Tor IP...")
+        request_new_ip()
+        time.sleep(10)  # Sleep to ensure the new IP is ready, Tor allows a new IP every 10 seconds
+        tor_connection_test_result = test_tor_connection(driver)
+    
     driver.quit()
