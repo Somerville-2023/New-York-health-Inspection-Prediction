@@ -448,13 +448,67 @@ def calculate_days(data):
     return reviews  # Return df
 
 
+def clean_additional(data):
+    df = data.copy()
+    df['additional'] = df.r_additional.apply(lambda x: re.findall(r'\'([^\']+)?\'', x))
+    important_additionals = \
+        ['Service: 5', 'Service: 4', 'Service: 3', 'Service: 2', 'Service: 1',
+         'Atmosphere: 5', 'Atmosphere: 4', 'Atmosphere: 3', 'Atmosphere: 2', 'Atmosphere: 1',
+         'Food: 5',  'Food: 4',  'Food: 3',  'Food: 2',  'Food: 1', 'Price per person $10–20',
+         'Price per person $20–30', 'Price per person $30–50', 'Price per person $50–100', 'Price per person $100+']
+    df['additional'] = df.additional.apply(lambda x: [ele for ele in x if ele in important_additionals])
+    df['additional'] = df.additional.apply(lambda x: ' '.join(x))
+    return df
+
+
+def create_additional_columns(df):
+    clean = df.copy()
+    clean['service'] = \
+        [int(re.findall(r'Service: (\d)', x)[0]) if re.search(r'Service: (\d)', x) else None for x in clean.additional]
+
+    clean['atmosphere'] = \
+        [int(re.findall(r'Atmosphere: (\d)', x)[0]) if re.search(r'Atmosphere: (\d)', x) else None for x in
+         clean.additional]
+
+    clean['food'] = \
+        [int(re.findall(r'Food: (\d)', x)[0]) if re.search(r'Food: (\d)', x) else None for x in clean.additional]
+
+    clean['price_per_person'] = \
+        [re.findall(r'\$(\S+)', x)[0] if re.search(r'\$(\S+)', x) else None for x in clean.additional]
+
+    return clean
+
+
+def adjust_prices(data):
+    df = data.copy()
+    new_prices = []
+
+    for price in df.price_per_person:
+        if price == '10–20':
+            new_prices.append(15)
+        elif price == '20–30':
+            new_prices.append(25)
+        elif price == '30–50':
+            new_prices.append(40)
+        elif price == '50–100':
+            new_prices.append(75)
+        elif price == '100+':
+            new_prices.append(100)
+        else:
+            new_prices.append(None)
+    df.price_per_person = new_prices
+    return df
+
+
 def clean_reviews(data):
     """This function will polish off the scraped reviews dataframe."""
     final_df = data.copy()  # Create copy of df
-    cols = ['id', 'final_date', 'caption', 'rating']  # Select columns to keep
+    # Columns to keep
+    cols = ['id', 'final_date', 'caption', 'rating','service', 'atmosphere', 'food', 'price_per_person']
     final_df = final_df[cols]  # Reassign columns
     final_df.rating = final_df.rating.astype(int)  # Change ratings to integers
-    final_df.columns = ['camis', 'publish_time', 'review_text', 'review_rating']  # Rename columns
+    final_df.columns = ['camis', 'publish_time', 'review_text', 'review_rating','service', 'atmosphere', 'food',
+                        'price_per_person']  # Rename columns
     return final_df  # Return df
 
 
@@ -491,6 +545,9 @@ def cleanse_reviews(scraped_data, api_data=None):
     df = clean_dates(df)  # Clean dates
     df = adjust_dates(df)  # Adjust dates
     df = calculate_days(df)  # Calculate estimated publish time
+    df = clean_additional(df)
+    df = create_additional_columns(df)
+    df = adjust_prices(df)
     df = clean_reviews(df)  # Finish cleaning df
     if api_data is not None:
         df2 = api_data.copy()  # Creates copy of api df
