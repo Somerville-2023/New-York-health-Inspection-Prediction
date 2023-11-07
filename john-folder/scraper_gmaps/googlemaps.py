@@ -741,7 +741,7 @@ class GoogleMapsScraper:
         chrome_binary_path = "/Applications/Google Chrome Beta.app/Contents/MacOS/Google Chrome Beta"
 
         # Specify the path to the ChromeDriver executable for Chrome Beta
-        driver_path = "/Users/jongarcia/codeup-data-science/googlemaps-scraper/chromedriver-mac-x64 BETA/chromedriver"
+        driver_path = "/Users/jongarcia/Downloads/chromedriver-mac-x64 BETA/chromedriver" 
 
         # Create a ChromeOptions object
         options = Options()
