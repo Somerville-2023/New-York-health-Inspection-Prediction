@@ -24,53 +24,51 @@ from sklearn.metrics import classification_report as class_rep
 
 
 
-
 # baseline function
 
 # ===========================================================================================================================================
 
 def baseline():
 
-    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
+    grademap = {'A': 'Pass', 'B': 'Fail', 'C': 'Fail'}
 
     # Load and preprocess your data
-    ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
-    ny_reviews = ny_reviews.dropna()
+    ny_reviews = pd.read_csv('ny_reviews_sentiment_ratings.csv', index_col=0)
+    ny_reviews = ny_reviews.rename(columns={'neg' : 'negative',
+                                            'neu' : 'neutral',
+                                            'pos' : 'positive',})
+    ny_reviews = ny_reviews[['grade', 'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']]
     ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
 
-    X = ny_reviews.reviews  # Features
-    y = ny_reviews.grade  # Target labels
+    X = ny_reviews.drop(columns=["grade"]) # Features
+    y = ny_reviews["grade"] # Target labels
 
     # Split the data into training, validation, and test sets
     X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7, random_state=42)
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
     tfidf = TfidfVectorizer()
-    X_train_tfidf = tfidf.fit_transform(X_train)
-    X_val_tfidf = tfidf.transform(X_val)
-    X_test_tfidf = tfidf.transform(X_test)
+    X_train_reviews_tfidf = tfidf.fit_transform(X_train["reviews"])
+    X_val_reviews_tfidf = tfidf.transform(X_val["reviews"])
+    X_test_reviews_tfidf = tfidf.transform(X_test["reviews"])
 
-    train_baseline_acc = y_train.value_counts().min() / y_train.shape[0] * 100
-    val_baseline_acc = y_val.value_counts().min() / y_val.shape[0] * 100
+    # Combine TF-IDF vectors with sentiment features
+    X_train = hstack([X_train_reviews_tfidf, X_train[['negative', 'neutral', 'positive', 'compound']].values]) #'negative', 'neutral', 'positive', 'compound'
+    X_val = hstack([X_val_reviews_tfidf, X_val[['negative', 'neutral', 'positive', 'compound']].values]) #'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price'
+    X_test = hstack([X_test_reviews_tfidf, X_test[['negative', 'neutral', 'positive', 'compound']].values])
 
-    # Get the minority class label
-    minority_class = y_train.value_counts().idxmin()
+    train_baseline_acc = y_train.value_counts().max() / y_train.shape[0] * 100    
+    val_baseline_acc = y_val.value_counts().max() / y_val.shape[0] * 100
 
-    # Predict using the minority class for both training and validation
-    y_train_pred = [minority_class] * len(y_train)
-    y_val_pred = [minority_class] * len(y_val)
+    # train_classification_report = class_rep(y_train, y_train_pred)
+    # val_classification_report = class_rep(y_val, y_val_pred)
 
-    train_classification_report = class_rep(y_train, y_train_pred)
-    val_classification_report = class_rep(y_val, y_val_pred)
-
-    print(f'\nBaseline Model (Minority Class)')
+    print(f'\nBaseline Model')
     print(f'==================================================')
     print(f'\nTrain Accuracy: {train_baseline_acc:.2f}%\n')
     print(f'\nValidation Accuracy: {val_baseline_acc:.2f}%\n')
-    print(f'\nClassification Report for Training Set:\n{train_classification_report}\n')
-    print(f'\nClassification Report for Validation Set:\n{val_classification_report}\n')
-
-
+    # print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n\n\n')
+    # print(f'\nClassification Report for Validation Set:\n\n{val_classification_report}\n')
 
 
 
@@ -84,53 +82,53 @@ def baseline():
 # ===========================================================================================================================================
 
 def model_1():
+    grademap = {'A': 'Pass', 'B': 'Fail', 'C': 'Fail'}
 
-    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
-
-    
     # Load and preprocess your data
-    ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
-    ny_reviews = ny_reviews.dropna()
+    ny_reviews = pd.read_csv('ny_reviews_sentiment_ratings.csv', index_col=0)
+    ny_reviews = ny_reviews.rename(columns={'neg': 'negative', 'neu': 'neutral', 'pos': 'positive'})
+    ny_reviews = ny_reviews[['grade', 'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']]
+    
     ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
 
-
-
-    X = ny_reviews.reviews # add new features
-    y = ny_reviews.grade
+    X = ny_reviews.drop(columns=["grade"])  # Features
+    y = ny_reviews["grade"]  # Target labels
 
     # Split the data into training, validation, and test sets
     X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7, random_state=42)
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-    # Create TF-IDF vectors
     tfidf = TfidfVectorizer()
-    X_train_tfidf = tfidf.fit_transform(X_train)
-    X_val_tfidf = tfidf.transform(X_val)
-    X_test_tfidf = tfidf.transform(X_test)
+    X_train_reviews_tfidf = tfidf.fit_transform(X_train["reviews"])
+    X_val_reviews_tfidf = tfidf.transform(X_val["reviews"])
+    X_test_reviews_tfidf = tfidf.transform(X_test["reviews"])
+
+    # Combine TF-IDF vectors with sentiment features
+    X_train = hstack([X_train_reviews_tfidf, X_train[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+    X_val = hstack([X_val_reviews_tfidf, X_val[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+    X_test = hstack([X_test_reviews_tfidf, X_test[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
 
     # Train a logistic regression model
-    lm = LogisticRegression(random_state=42)
-    lm.fit(X_train_tfidf, y_train)
+    lm = LogisticRegression(random_state=42, max_iter=1000)
+    lm.fit(X_train, y_train)
 
     # Calculate accuracy scores
-    y_train_res = pd.DataFrame({'actual': y_train, 'preds': lm.predict(X_train_tfidf)})
-    y_val_res = pd.DataFrame({'actual': y_val, 'preds': lm.predict(X_val_tfidf)})
+    y_train_pred = lm.predict(X_train)
+    y_val_pred = lm.predict(X_val)
 
-    y_train_pred = lm.predict(X_train_tfidf)
-    y_val_pred = lm.predict(X_val_tfidf)
-
-    train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
-    val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
+    train_accuracy = accuracy_score(y_train, y_train_pred)
+    val_accuracy = accuracy_score(y_val, y_val_pred)
 
     train_classification_report = class_rep(y_train, y_train_pred)
     val_classification_report = class_rep(y_val, y_val_pred)
 
-    print(f'\nLogisitic Regression Model')
-    print(f'==================================================')
+    print('\nLogistic Regression Model')
+    print('==================================================')
     print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
     print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
-    print(f'\nClassification Report for Training Set:\n{train_classification_report}\n')
-    print(f'\nClassification Report for Validation Set:\n{val_classification_report}\n')
+    print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n\n\n')
+    print(f'\nClassification Report for Validation Set:\n\n{val_classification_report}\n')
+
 
 
 
@@ -144,26 +142,35 @@ def model_1():
 # ===========================================================================================================================================
 
 def model_2():
+
+    ny_reviews = pd.read_csv('ny_reviews_sentiment_ratings.csv', index_col=0)
     grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
 
+    ny_reviews = ny_reviews.rename(columns={'neg' : 'negative',
+                                            'neu' : 'neutral',
+                                            'pos' : 'positive',})
+
+    ny_reviews = ny_reviews[['grade', 'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']]
     
     # Load and preprocess your data
-    ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
-    ny_reviews = ny_reviews.dropna()
     ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
 
-    X = ny_reviews.reviews# add new features
-    y = ny_reviews.grade
+    X = ny_reviews.drop(columns=["grade"])  # Features
+    y = ny_reviews["grade"]  # Target labels
 
     # Split the data into training, validation, and test sets
     X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7, random_state=42)
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-    # Create TF-IDF vectors
     tfidf = TfidfVectorizer()
-    X_train_tfidf = tfidf.fit_transform(X_train)
-    X_val_tfidf = tfidf.transform(X_val)
-    X_test_tfidf = tfidf.transform(X_test)
+    X_train_reviews_tfidf = tfidf.fit_transform(X_train["reviews"])
+    X_val_reviews_tfidf = tfidf.transform(X_val["reviews"])
+    X_test_reviews_tfidf = tfidf.transform(X_test["reviews"])
+
+    # Combine TF-IDF vectors with sentiment features
+    X_train = hstack([X_train_reviews_tfidf, X_train[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+    X_val = hstack([X_val_reviews_tfidf, X_val[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+    X_test = hstack([X_test_reviews_tfidf, X_test[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
 
     # Train KNN Model
     knn = KNeighborsClassifier(
@@ -193,8 +200,8 @@ def model_2():
     print(f'==================================================')
     print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
     print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
-    print(f'\nClassification Report for Training Set:\n{train_classification_report}\n')
-    print(f'\nClassification Report for Validation Set:\n{val_classification_report}\n')
+    print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n\n\n')
+    print(f'\nClassification Report for Validation Set:\n\n{val_classification_report}\n')
 
 
 
@@ -207,12 +214,15 @@ target_names = ['Fail', 'Pass']
 def model_3():
 
     # Load and preprocess your data
-    ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
-    ny_reviews = ny_reviews.dropna()
+    ny_reviews = pd.read_csv('ny_reviews_sentiment_ratings.csv', index_col=0)
+    ny_reviews = ny_reviews[['grade', 'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']]
 
     grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
 
-
+    ny_reviews = ny_reviews.rename(columns={'neg' : 'negative',
+                                            'neu' : 'neutral',
+                                            'pos' : 'positive',})\
+    
     ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
     
     # Initialize the label encoder
@@ -267,8 +277,8 @@ def model_3():
     print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
     print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
 
-    print(f'\nClassification Report for Training Set:\n{train_classification_report}\n')
-    print(f'\nClassification Report for Validation Set:\n{val_classification_report}\n')
+    print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n\n\n')
+    print(f'\nClassification Report for Validation Set:\n\n{val_classification_report}\n')
 
 
 
@@ -283,28 +293,33 @@ def model_3():
 
 def model_4():
     
-    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
+    grademap = {'A': 'Pass', 'B': 'Fail', 'C': 'Fail'}
 
-    
     # Load and preprocess your data
-    ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
-    ny_reviews = ny_reviews.dropna()
+    ny_reviews = pd.read_csv('ny_reviews_sentiment_ratings.csv', index_col=0)
+    ny_reviews = ny_reviews.rename(columns={'neg': 'negative', 'neu': 'neutral', 'pos': 'positive'})
+    ny_reviews = ny_reviews[['grade', 'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']]
+
     ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
 
-    X = ny_reviews.reviews # add new features
-    y = ny_reviews.grade
-
+    X = ny_reviews.drop(columns=["grade"])  # Features
+    y = ny_reviews["grade"]  # Target labels
 
     # Split the data into training, validation, and test sets
     X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7, random_state=42)
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-    # Create TF-IDF vectors
-    tfidf = TfidfVectorizer(use_idf=True)
-    X_train_tfidf = tfidf.fit_transform(X_train)
-    X_val_tfidf = tfidf.transform(X_val)
-    X_test_tfidf = tfidf.transform(X_test)
+    tfidf = TfidfVectorizer()
+    X_train_reviews_tfidf = tfidf.fit_transform(X_train["reviews"])
+    X_val_reviews_tfidf = tfidf.transform(X_val["reviews"])
+    X_test_reviews_tfidf = tfidf.transform(X_test["reviews"])
 
+    # Combine TF-IDF vectors with sentiment features
+    X_train = hstack([X_train_reviews_tfidf, X_train[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+    X_val = hstack([X_val_reviews_tfidf, X_val[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+    X_test = hstack([X_test_reviews_tfidf, X_test[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+
+    # set log reg hyperparameters
     lm = LogisticRegression(
     penalty='l2',  # L2 regularization (Ridge)
     C=1.0,  # Inverse of regularization strength
@@ -315,14 +330,14 @@ def model_4():
     random_state=42  # For reproducibility
     )
     
-    lm.fit(X_train_tfidf, y_train)
+    lm.fit(X_train, y_train)
 
      # Calculate scores
-    y_train_res = pd.DataFrame({'actual': y_train, 'preds': lm.predict(X_train_tfidf)})
-    y_val_res = pd.DataFrame({'actual': y_val, 'preds': lm.predict(X_val_tfidf)})
+    y_train_res = pd.DataFrame({'actual': y_train, 'preds': lm.predict(X_train)})
+    y_val_res = pd.DataFrame({'actual': y_val, 'preds': lm.predict(X_val)})
 
-    y_train_pred = lm.predict(X_train_tfidf)
-    y_val_pred = lm.predict(X_val_tfidf)
+    y_train_pred = lm.predict(X_train)
+    y_val_pred = lm.predict(X_val)
 
     train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
     val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
@@ -334,8 +349,8 @@ def model_4():
     print(f'==================================================')
     print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
     print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
-    print(f'\nClassification Report for Training Set:\n{train_classification_report}\n')
-    print(f'\nClassification Report for Validation Set:\n{val_classification_report}\n')
+    print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n\n\n')
+    print(f'\nClassification Report for Validation Set:\n\n{val_classification_report}\n')
 
 
 
@@ -348,25 +363,31 @@ def model_4():
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 
 def model_5():
-    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
+    grademap = {'A': 'Pass', 'B': 'Fail', 'C': 'Fail'}
 
     # Load and preprocess your data
-    ny_reviews = pd.read_csv('ny_reviews.csv', index_col=0)
-    ny_reviews = ny_reviews.dropna()
+    ny_reviews = pd.read_csv('ny_reviews_sentiment_ratings.csv', index_col=0)
+    ny_reviews = ny_reviews.rename(columns={'neg': 'negative', 'neu': 'neutral', 'pos': 'positive'})
+    ny_reviews = ny_reviews[['grade', 'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']]
+
     ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
 
-    X = ny_reviews.reviews
-    y = ny_reviews.grade
+    X = ny_reviews.drop(columns=["grade"])  # Features
+    y = ny_reviews["grade"]  # Target labels
 
     # Split the data into training, validation, and test sets
     X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7, random_state=42)
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-    # Create TF-IDF vectors
-    tfidf = TfidfVectorizer(use_idf=True)
-    X_train_tfidf = tfidf.fit_transform(X_train)
-    X_val_tfidf = tfidf.transform(X_val)
-    X_test_tfidf = tfidf.transform(X_test)
+    tfidf = TfidfVectorizer()
+    X_train_reviews_tfidf = tfidf.fit_transform(X_train["reviews"])
+    X_val_reviews_tfidf = tfidf.transform(X_val["reviews"])
+    X_test_reviews_tfidf = tfidf.transform(X_test["reviews"])
+
+    # Combine TF-IDF vectors with sentiment features
+    X_train_combined = hstack([X_train_reviews_tfidf, X_train[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+    X_val_combined = hstack([X_val_reviews_tfidf, X_val[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+    X_test_combined = hstack([X_test_reviews_tfidf, X_test[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
 
     # Define the hyperparameter grid for Random Forest
     rf_param_grid = {
@@ -378,61 +399,30 @@ def model_5():
     }
 
     # Create a Random Forest model
-    rf_model = RandomForestClassifier(random_state=42, class_weight='balanced')
+    rf = RandomForestClassifier(random_state=42, class_weight='balanced')
 
     # Perform grid search
-    rf_grid_search = GridSearchCV(estimator=rf_model, param_grid=rf_param_grid, cv=3, scoring='accuracy')
-    rf_grid_search.fit(X_train_tfidf, y_train)
+    rf_grid_search = GridSearchCV(estimator=rf, param_grid=rf_param_grid, cv=3, scoring='accuracy')
+    rf_grid_search.fit(X_train_combined, y_train)
 
     # Get the best Random Forest model
     rf = rf_grid_search.best_estimator_
-    
-    # Define the hyperparameter grid for Gradient Boosting
-    gb_param_grid = {
-        'n_estimators': [50, 100, 200],
-        'learning_rate': [0.01, 0.1, 0.2],
-        'max_depth': [3, 4, 5],
-        'min_samples_split': [2, 3, 4],
-        'min_samples_leaf': [1, 2, 3],
-        'subsample': [0.8, 0.9, 1.0],
-    }
-
-    # Create a Gradient Boosting model
-    gb_model = GradientBoostingClassifier(random_state=42)
-
-    # Perform grid search
-    gb_grid_search = GridSearchCV(estimator=gb_model, param_grid=gb_param_grid, cv=3, scoring='accuracy')
-    gb_grid_search.fit(X_train_tfidf, y_train)
-
-    # Get the best Gradient Boosting model
-    gb = gb_grid_search.best_estimator
+    rf.fit(X_train_combined, y_train)
 
     # Calculate scores for Random Forest
-    y_train_pred_rf = rf.predict(X_train_tfidf)
-    y_val_pred_rf = rf.predict(X_val_tfidf)
+    y_train_pred_rf = rf.predict(X_train_combined)
+    y_val_pred_rf = rf.predict(X_val_combined)
 
     train_accuracy_rf = accuracy_score(y_train, y_train_pred_rf)
     val_accuracy_rf = accuracy_score(y_val, y_val_pred_rf)
-
-    # Calculate scores for Gradient Boosting
-    y_train_pred_gb = gb.predict(X_train_tfidf)
-    y_val_pred_gb = gb.predict(X_val_tfidf)
-
-    train_accuracy_gb = accuracy_score(y_train, y_train_pred_gb)
-    val_accuracy_gb = accuracy_score(y_val, y_val_pred_gb)
 
     # Print classification reports
     print(f'\nRandom Forest Model (Hyperparameters Used)')
     print(f'==================================================')
     print(f'\nTrain Accuracy: {train_accuracy_rf:.2f}\n')
     print(f'\nValidation Accuracy: {val_accuracy_rf:.2f}\n')
-    print(f'\nClassification Report for Random Forest (Training Set):\n{classification_report(y_train, y_train_pred_rf)}\n')
-    print(f'\nClassification Report for Random Forest (Validation Set):\n{classification_report(y_val, y_val_pred_rf)}\n')
+    print(f'\nClassification Report for Random Forest (Training Set):\n\n{class_rep(y_train, y_train_pred_rf)}\n\n\n')
+    print(f'\nClassification Report for Random Forest (Validation Set):\n\n{class_rep(y_val, y_val_pred_rf)}\n')
 
-    print(f'\nGradient Boosting Model (Hyperparameters Used)')
-    print(f'==================================================')
-    print(f'\nTrain Accuracy: {train_accuracy_gb:.2f}\n')
-    print(f'\nValidation Accuracy: {val_accuracy_gb:.2f}\n')
-    print(f'\nClassification Report for Gradient Boosting (Training Set):\n{classification_report(y_train, y_train_pred_gb)}\n')
-    print(f'\nClassification Report for Gradient Boosting (Validation Set):\n{classification_report(y_val, y_val_pred_gb)}\n')
+
 
