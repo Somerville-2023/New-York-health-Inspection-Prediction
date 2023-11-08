@@ -609,9 +609,9 @@ def ny_pipeline(inspections_df, reviews_df):
 def acquire_ny_reviews(include_api=False):
     """This function combines the entire pipeline into one function. It will look for ny_reviews, which is the df
     of the combined clean ny inspection data and review data, if that isn't found it will then begin creating that df"""
-    if os.path.isfile('ny_reviews.csv'):  # Checks for local file
+    if os.path.isfile('ny_reviews_sentiment_ratings.csv'):  # Checks for local file
         print('ny_reviews.csv found!')
-        return pd.read_csv('ny_reviews.csv')  # Returns local file if there is one
+        return pd.read_csv('ny_reviews_sentiment_ratings.csv')  # Returns local file if there is one
 
     if os.path.isfile('clean_ny.csv'):  # Checks for local file
         ny = final_ny()  # If file is found, it is read and assigned to ny variable
