@@ -181,14 +181,14 @@ def model_2():
     leaf_size=30,  
     metric='euclidean'  # You can choose other metrics or provide custom ones
     )
-    knn.fit(X_train_tfidf, y_train)
+    knn.fit(X_train, y_train)
 
     # Calculate accuracy scores
-    y_train_res = pd.DataFrame({'actual': y_train, 'preds': knn.predict(X_train_tfidf)})
-    y_val_res = pd.DataFrame({'actual': y_val, 'preds': knn.predict(X_val_tfidf)})
+    y_train_res = pd.DataFrame({'actual': y_train, 'preds': knn.predict(X_train)})
+    y_val_res = pd.DataFrame({'actual': y_val, 'preds': knn.predict(X_val)})
 
-    y_train_pred = knn.predict(X_train_tfidf)
-    y_val_pred = knn.predict(X_val_tfidf)
+    y_train_pred = knn.predict(X_train)
+    y_val_pred = knn.predict(X_val)
     
     train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
     val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
@@ -212,63 +212,64 @@ def model_2():
 target_names = ['Fail', 'Pass']
 
 def model_3():
-
     # Load and preprocess your data
     ny_reviews = pd.read_csv('ny_reviews_sentiment_ratings.csv', index_col=0)
-    ny_reviews = ny_reviews[['grade', 'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']]
-
     grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
-
-    ny_reviews = ny_reviews.rename(columns={'neg' : 'negative',
-                                            'neu' : 'neutral',
-                                            'pos' : 'positive',})\
     
+    ny_reviews = ny_reviews.rename(columns={'neg': 'negative', 'neu': 'neutral', 'pos': 'positive'})
+    ny_reviews = ny_reviews[['grade', 'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']]
     ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
-    
+
     # Initialize the label encoder
     label_encoder = LabelEncoder()
-    
+
     # Encode the target labels
     y_encoded = label_encoder.fit_transform(ny_reviews.grade)
-    
+
     # Split the data into training, validation, and test sets
-    X_train, X_temp, y_train, y_temp = train_test_split(ny_reviews.reviews, y_encoded, train_size=0.7, random_state=42) # add new features
+    X_train, X_temp, y_train, y_temp = train_test_split(ny_reviews[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']], y_encoded, train_size=0.7, random_state=42)  # Combine features
     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
-    
+
     # Initialize and fit the TfidfVectorizer on the training data
     tfidf = TfidfVectorizer()
-    X_train_tfidf = tfidf.fit_transform(X_train)
-    X_val_tfidf = tfidf.transform(X_val)
-    X_test_tfidf = tfidf.transform(X_test)
-    
+    X_train_tfidf = tfidf.fit_transform(X_train['reviews'])
+    X_val_tfidf = tfidf.transform(X_val['reviews'])
+    X_test_tfidf = tfidf.transform(X_test['reviews'])
+
+    # Combine TF-IDF vectors with sentiment features for training data
+    X_train_combined = hstack([X_train_tfidf, X_train[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']]])
+
+    # Combine TF-IDF vectors with sentiment features for validation data
+    X_val_combined = hstack([X_val_tfidf, X_val[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']]])
+
     # Create the XGBoost classifier instance
     bst = XGBClassifier(n_estimators=100, max_depth=2, learning_rate=0.25, objective='multi:softprob', num_class=len(label_encoder.classes_))
-    
-    # Fit the XGBoost model on the training data
-    bst.fit(X_train_tfidf, y_train)
-    
+
+    # Fit the XGBoost model on the combined features of the training data
+    bst.fit(X_train_combined, y_train)
+
     # Predict the classes on the validation data
-    preds = bst.predict(X_val_tfidf)
-    
+    preds = bst.predict(X_val_combined)
+
     # If you want to decode the predicted labels back to their original class names:
     # Convert one-hot encoded labels back to original class labels
     preds_decoded = label_encoder.inverse_transform(preds.argmax(axis=1))
 
     # Calculate scores
     # Flatten the predictions to a 1D array
-    train_preds = bst.predict(X_train_tfidf)
+    train_preds = bst.predict(X_train_combined)
     train_preds_flattened = train_preds.argmax(axis=1)
-    
+
     y_train_res = pd.DataFrame({'actual': y_train, 'preds': train_preds_flattened})
-    
-    val_preds = bst.predict(X_val_tfidf)
+
+    val_preds = bst.predict(X_val_combined)
     val_preds_flattened = val_preds.argmax(axis=1)
-    
+
     y_val_res = pd.DataFrame({'actual': y_val, 'preds': val_preds_flattened})
-    
+
     train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
     val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
-    
+
     train_classification_report = class_rep(y_train, y_train_res['preds'], target_names=target_names)
     val_classification_report = class_rep(y_val, y_val_res['preds'], target_names=target_names)
 
@@ -277,8 +278,9 @@ def model_3():
     print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
     print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
 
-    print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n\n\n')
+    print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n')
     print(f'\nClassification Report for Validation Set:\n\n{val_classification_report}\n')
+
 
 
 
