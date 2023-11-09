@@ -39,19 +39,53 @@ def data_distribution(data):
         data (DataFrame): The DataFrame containing the data.
     '''
 
+    # Create a transparent background
+    fig, ax = plt.subplots()
+    fig.patch.set_facecolor('none')
+    
     # set the font and style
-    sns.set(font_scale=1, style="white")
+    sns.set(font_scale=1.5)
 
-    # histplot visual binned by 25
+    # Create a histogram with synonymous labels
     sns.histplot(data, x='score', bins=25)
     
     # Edits to histplot for a more appealing view of data
-    plt.title('Distribution of data by Scores', fontsize=15)
-    plt.xlabel('Score', labelpad=20)
-    plt.ylabel('Count', rotation=0, labelpad=30)
+    # plt.title('Distribution of data by Ratings', fontsize=15)
+    plt.xlabel('Violation Score', labelpad=10)
+    plt.ylabel('Count', rotation=0, labelpad=20)
+    plt.tick_params(
+        axis='x',          # changes apply to the x-axis
+        which='both',      # both major and minor ticks are affected
+        bottom=False,      # ticks along the bottom edge are off
+        top=False,         # ticks along the top edge are off
+        labelbottom=True  # labels along the bottom edge are off
+        )
+    
+    plt.tick_params(
+        axis='y',          # changes apply to the y-axis
+        which='both',      # both major and minor ticks are affected
+        left=False,        # ticks along the left edge are off
+        right=False,       # ticks along the right edge are off
+        labelleft=True     # labels along the left edge are off
+        )
+
     plt.xlim(0, 80)
-    plt.ylim(0,28000)
+    plt.ylim(0, 28000)
+    
+    # Remove the top and right spines
+    ax = plt.gca()
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.spines['left'].set_visible(False)
+    ax.spines['bottom'].set_visible(False)
+
+    plt.savefig('data_distribution.png', transparent=True)
     plt.show()
+
+
+
+
+
 
 
 # ==============================================TOP 20 BUSINESS BY COUNT FUNCTION==============================================

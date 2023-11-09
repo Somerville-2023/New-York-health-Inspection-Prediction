@@ -43,28 +43,30 @@ def join_text(df):
     
     return a_reviews, b_reviews, c_reviews, all_reviews
 
-def list_words(df):
+def list_words(df, text_column):
     """
-    Create lists of words from the 'reviews' column of a DataFrame based on grade labels and for all data.
+    Create lists of words from the specified text column of a DataFrame based on grade labels and for all data.
 
     Args:
-        df (pd.DataFrame): The DataFrame containing 'reviews' text data and grade labels.
+        df (pd.DataFrame): The DataFrame containing text data and grade labels.
+        text_column (str): The name of the text column to process. Defaults to 'reviews'.
 
     Returns:
         tuple: A tuple containing the following lists of words:
-            - a_words (pd.Series): Words from the 'reviews' column for 'A' graded data.
-            - b_words (pd.Series): Words from the 'reviews' column for 'B' graded data.
-            - c_words (pd.Series): Words from the 'reviews' column for 'C' graded data.
-            - all_words (pd.Series): Words from the 'reviews' column for all data.
+            - a_words (pd.Series): Words from the specified text column for 'A' graded data.
+            - b_words (pd.Series): Words from the specified text column for 'B' graded data.
+            - c_words (pd.Series): Words from the specified text column for 'C' graded data.
+            - all_words (pd.Series): Words from the specified text column for all data.
     """
-    a_words = df[df.grade == 'A'].reviews.str.split(expand=True).stack()
-    b_words = df[df.grade == 'B'].reviews.str.split(expand=True).stack()
-    c_words = df[df.grade == 'C'].reviews.str.split(expand=True).stack()
-    all_words = df.reviews.str.split(expand=True).stack()
+    a_words = df[df['grade'] == 'A'][text_column].str.split(expand=True).stack()
+    b_words = df[df['grade'] == 'B'][text_column].str.split(expand=True).stack()
+    c_words = df[df['grade'] == 'C'][text_column].str.split(expand=True).stack()
+    all_words = df[text_column].str.split(expand=True).stack()
     
     return a_words, b_words, c_words, all_words
 
-def word_freq(df):
+
+def word_freq(df, text_column):
     """
     Calculate word frequencies for different grade labels and for all data in a DataFrame.
 
@@ -79,7 +81,7 @@ def word_freq(df):
             - all_freq (pd.Series): Word frequencies for all data.
     """
     # Create lists of words based on grade labels and for all data
-    a_words, b_words, c_words, all_words = list_words(df)
+    a_words, b_words, c_words, all_words = list_words(df, text_column)
 
     # Calculate word frequencies and sort in descending order
     a_freq = pd.Series(a_words).value_counts().sort_values(ascending=False).astype(int)
@@ -90,7 +92,7 @@ def word_freq(df):
     return a_freq, b_freq, c_freq, all_freq
 
 
-def word_counts(df, reset_index=True):
+def word_counts(df, reset_index=True, text_column='reviews'):
     """
     Process and sort word frequency DataFrames.
 
@@ -102,7 +104,7 @@ def word_counts(df, reset_index=True):
         pd.DataFrame: Sorted and processed word counts DataFrame with "word" column as the first column,
                       and index reset based on the reset_index parameter.
     """
-    a_freq, b_freq, c_freq, all_freq = word_freq(df)
+    a_freq, b_freq, c_freq, all_freq = word_freq(df, text_column)
     
     # Concatenate the DataFrames and set column names
     word_counts = (pd.concat([all_freq, a_freq, b_freq, c_freq], axis=1, sort=True)

@@ -105,10 +105,15 @@ def model_1():
     train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
     val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
 
+    train_classification_report = class_rep(y_train, y_train_pred)
+    val_classification_report = class_rep(y_val, y_val_pred)
+
     print(f'\nLogisitic Regression Model (Hyperparameters Used)')
     print(f'==================================================')
     print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
     print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
+    print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n')
+    print(f'\nClassification Report for Validation Set:\n\n{val_classification_report}\n')
 
 
 
