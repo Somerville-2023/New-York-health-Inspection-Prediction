@@ -5,7 +5,7 @@ import prepare as p
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
-import seaborn as sn
+import seaborn as sns
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.model_selection import train_test_split, GridSearchCV
@@ -20,6 +20,42 @@ from scipy.sparse import hstack
 from sklearn.metrics import classification_report as class_rep
 
 
+
+
+
+# Visual functions for model:
+
+def plot_accuracy_comparison(train_accuracy, val_accuracy, test_accuracy, baseline_train_accuracy, baseline_val_accuracy):
+    sns.set_theme(font_scale=1.25, style="white")
+
+    # Data
+    models = ['Baseline Train', 'Baseline Validation', 'Final Train', 'Final Validation', 'Final Test']
+    accuracy_scores = [baseline_train_accuracy, baseline_val_accuracy, train_accuracy, val_accuracy, test_accuracy]
+
+    # Custom colors for each bar
+    custom_colors = ['darkgray', 'darkgray', 'b', 'b', 'b']
+
+    # Create bar chart with custom colors
+    plt.figure(figsize=(10, 6))
+    barplot = sns.barplot(x=models, y=accuracy_scores, palette=custom_colors, edgecolor='black')
+    plt.ylim(0, 1)
+    plt.title('Model Accuracy Comparison')
+    plt.ylabel('Accuracy')
+    
+    # Remove y-axis spines, ticks, and labels
+    sns.despine(left=True)
+    plt.yticks([])
+
+    # Add percentage labels within the bars
+    for i, v in enumerate(accuracy_scores):
+        barplot.text(i, v/2, f'{v*100:.0f}%', ha='center', va='center', color='black')
+
+    plt.savefig('models_plot.png', transparent=True)
+    plt.show()
+
+
+    # # Save the figure with transparent background
+    # plt.savefig('models_plot.png', transparent=True)
 
 
 
@@ -67,6 +103,7 @@ def baseline():
     print(f'==================================================')
     print(f'\nTrain Accuracy: {train_baseline_acc:.2f}%\n')
     print(f'\nValidation Accuracy: {val_baseline_acc:.2f}%\n')
+
     # print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n\n\n')
     # print(f'\nClassification Report for Validation Set:\n\n{val_classification_report}\n')
 
@@ -360,9 +397,11 @@ def model_4():
 
 
 
-# rf classifier/Gradient Boosting function  ===========================================================================================================================================
+# rf classifier
 
-from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
+# ===========================================================================================================================================
+
+from sklearn.ensemble import RandomForestClassifier
 
 def model_5():
     grademap = {'A': 'Pass', 'B': 'Fail', 'C': 'Fail'}
@@ -425,6 +464,110 @@ def model_5():
     print(f'\nValidation Accuracy: {val_accuracy_rf:.2f}\n')
     print(f'\nClassification Report for Random Forest (Training Set):\n\n{class_rep(y_train, y_train_pred_rf)}\n\n\n')
     print(f'\nClassification Report for Random Forest (Validation Set):\n\n{class_rep(y_val, y_val_pred_rf)}\n')
+
+
+
+
+
+
+# Final model
+
+# ===================================================================================================================================
+
+
+
+target_names = ['Fail', 'Pass']
+
+def final_model():
+    # Load and preprocess your data
+    ny_reviews = pd.read_csv('ny_reviews_sentiment_ratings.csv', index_col=0)
+    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
+    
+    ny_reviews = ny_reviews.rename(columns={'neg': 'negative', 'neu': 'neutral', 'pos': 'positive'})
+    ny_reviews = ny_reviews[['grade', 'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']]
+    ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
+
+    # Initialize the label encoder
+    label_encoder = LabelEncoder()
+
+    # Encode the target labels
+    y_encoded = label_encoder.fit_transform(ny_reviews.grade)
+
+    # Split the data into training, validation, and test sets
+    X_train, X_temp, y_train, y_temp = train_test_split(ny_reviews[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']], y_encoded, train_size=0.7, random_state=42)  # Combine features
+    X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
+
+    # Initialize and fit the TfidfVectorizer on the training data
+    tfidf = TfidfVectorizer()
+    X_train_tfidf = tfidf.fit_transform(X_train['reviews'])
+    X_val_tfidf = tfidf.transform(X_val['reviews'])
+    X_test_tfidf = tfidf.transform(X_test['reviews'])
+
+    # Combine TF-IDF vectors with sentiment features for training data
+    X_train_combined = hstack([X_train_tfidf, X_train[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']]])
+
+    # Combine TF-IDF vectors with sentiment features for validation data
+    X_val_combined = hstack([X_val_tfidf, X_val[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']]])
+
+    # Combine TF-IDF vectors with sentiment features for test data
+    X_test_combined = hstack([X_test_tfidf, X_test[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']]])
+
+    # Create the XGBoost classifier instance
+    bst = XGBClassifier(n_estimators=100, max_depth=2, learning_rate=0.25, objective='multi:softprob', num_class=len(label_encoder.classes_))
+
+    # Fit the XGBoost model on the combined features of the training data
+    bst.fit(X_train_combined, y_train)
+
+    # Predict the classes on the validation data
+    preds = bst.predict(X_val_combined)
+
+    # If you want to decode the predicted labels back to their original class names:
+    # Convert one-hot encoded labels back to original class labels
+    preds_decoded = label_encoder.inverse_transform(preds.argmax(axis=1))
+
+    # Calculate scores
+    # Flatten the predictions to a 1D array
+    train_preds = bst.predict(X_train_combined)
+    train_preds_flattened = train_preds.argmax(axis=1)
+
+    y_train_res = pd.DataFrame({'actual': y_train, 'preds': train_preds_flattened})
+
+    val_preds = bst.predict(X_val_combined)
+    val_preds_flattened = val_preds.argmax(axis=1)
+
+    y_val_res = pd.DataFrame({'actual': y_val, 'preds': val_preds_flattened})
+
+    test_preds = bst.predict(X_test_combined)
+    test_preds_flattened = test_preds.argmax(axis=1)
+
+    y_test_res = pd.DataFrame({'actual': y_test, 'preds': test_preds_flattened})
+
+    train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
+    val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
+    test_accuracy = accuracy_score(y_test_res['actual'], y_test_res['preds'])
+
+
+    train_classification_report = class_rep(y_train, y_train_res['preds'], target_names=target_names)
+    val_classification_report = class_rep(y_val, y_val_res['preds'], target_names=target_names)
+    test_classification_report = class_rep(y_test, y_test_res['preds'], target_names=target_names)
+
+
+    print(f'\nXGBClassifier Model (Hyperparameters Used)')
+    print(f'==================================================')
+    print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
+    print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
+    print(f'\nTest Accuracy: {test_accuracy:.2f}\n')
+
+
+    print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n')
+    print(f'\nClassification Report for Validation Set:\n\n{val_classification_report}\n')
+    print(f'\nClassification Report for Validation Set:\n\n{test_classification_report}\n')
+
+    # Plot accuracy comparison
+    baseline_train_accuracy = 0.55  # Replace with the actual baseline train accuracy
+    baseline_val_accuracy = 0.57  # Replace with the actual baseline validation accuracy
+    plot_accuracy_comparison(train_accuracy, val_accuracy, test_accuracy, baseline_train_accuracy, baseline_val_accuracy)
+
 
 
 
