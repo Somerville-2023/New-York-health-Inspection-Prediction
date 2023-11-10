@@ -33,7 +33,7 @@ def plot_accuracy_comparison(train_accuracy, val_accuracy, test_accuracy, baseli
     accuracy_scores = [baseline_train_accuracy, baseline_val_accuracy, train_accuracy, val_accuracy, test_accuracy]
 
     # Custom colors for each bar
-    custom_colors = ['darkgray', 'darkgray', 'b', 'b', 'b']
+    custom_colors = ['darkgray', 'darkgray', '#1F77B4', '#1F77B4', '#1F77B4']
 
     # Create bar chart with custom colors
     plt.figure(figsize=(10, 6))
