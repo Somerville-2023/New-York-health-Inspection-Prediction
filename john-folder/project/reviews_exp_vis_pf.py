@@ -140,7 +140,7 @@ def plot_top_words_freq(word_counts, column, top_n=20, figsize=(12, 10), title=N
         plt.axvline(x=reference_line_percent, color='black', linestyle='--', linewidth=2)
 
         # Optionally, add text to indicate the percentage
-        plt.text(reference_line_percent +0.5, plt.gca().get_ylim()[1]+.3, f'Grade A Frequency ({reference_line_percent}%)',
+        plt.text(reference_line_percent +0.5, plt.gca().get_ylim()[1]+.3, f'Pass Frequency ({reference_line_percent}%)',
                  va='center', ha='center', color='black', fontsize=12)
 
     # Remove the spines (box around the plot)
@@ -226,7 +226,7 @@ def plot_top_words_freq_small(word_counts, column, top_n=20, figsize=(12, 10), t
             
             # Calculate the position for the percentage text
             if j == 0:
-                x_position = value +2.5 #/ 2
+                x_position = value -3 #/ 2
             else:
                 x_position = top_words.iloc[i][columns_to_plot[:j]].sum() + value -3 #/ 2
             
@@ -240,8 +240,8 @@ def plot_top_words_freq_small(word_counts, column, top_n=20, figsize=(12, 10), t
         plt.axvline(x=reference_line_percent, color='black', linestyle='--', linewidth=2)
 
         # Optionally, add text to indicate the percentage
-        plt.text(reference_line_percent +0.5, plt.gca().get_ylim()[1]+.3, f'Grade C Frequency ({reference_line_percent}%)',
-                 va='center', ha='center', color='white', fontsize=12)
+        plt.text(reference_line_percent +0.5, plt.gca().get_ylim()[1]+.3, f'Fail Frequency ({reference_line_percent}%)',
+                 va='center', ha='center', color='black', fontsize=12)
 
     
     # Remove the spines (box around the plot)
@@ -266,8 +266,6 @@ def plot_top_words_freq_small(word_counts, column, top_n=20, figsize=(12, 10), t
     plt.tight_layout()
     plt.show()
 
-import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 
 def plot_legend_only(custom_colors, figsize=(4, 2), fontsize=12, title_fontsize=14, title="Legend"):
     """
@@ -299,31 +297,25 @@ def plot_legend_only(custom_colors, figsize=(4, 2), fontsize=12, title_fontsize=
     # Show only the legend
     plt.show()
 
-# Example usage:
-custom_colors = {'A': 'green', 'B': 'orange', 'C': 'red', 'All': 'grey'}
-plot_legend_only(custom_colors)
+# # Example usage:
+# custom_colors = {'A': 'green', 'B': 'orange', 'C': 'red', 'All': 'grey'}
+# plot_legend_only(custom_colors)
 
 
 
 def plot_legend_onlyv2(custom_colors, figsize=(4, 2), fontsize=12, title_fontsize=14, title="Legend"):
-    """
-    Creates a plot that only displays a legend based on the custom colors provided.
 
-    Parameters:
-    custom_colors (dict): A dictionary containing color codes to use for each column.
-    figsize (tuple): Width, height in inches of the figure. Defaults to (4, 2).
-    fontsize (int): The font size of the legend labels. Defaults to 12.
-    title_fontsize (int): The font size of the legend title. Defaults to 14.
-    title (str): The title of the legend. Defaults to "Legend".
-    """
     fig, ax = plt.subplots(figsize=figsize)
     patches = [mpatches.Patch(color=color, label=label) for label, color in custom_colors.items()]
-    legend = ax.legend(handles=patches, loc='center', fontsize=fontsize, title=title)
+    legend = ax.legend(handles=patches, loc='center', fontsize=fontsize, title=title, frameon=False)
     plt.setp(legend.get_title(), fontsize=title_fontsize)
     ax.axis('off')
     plt.tight_layout()
+    
+    plt.savefig('filename.png', transparent=True)
+    
     plt.show()
 
-# Example usage:
-custom_colors = {'A': '#1a472a', 'B': '#CCCCCC', 'C': '#B7B7B7'}
-plot_legend_only(custom_colors)
+# # Example usage:
+# custom_colors = {'A': '#1a472a', 'B': '#CCCCCC', 'C': '#B7B7B7'}
+# plot_legend_only(custom_colors)
