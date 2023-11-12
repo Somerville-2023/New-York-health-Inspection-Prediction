@@ -106,7 +106,7 @@ def visual_1(data):
     plt.figure(figsize=(36, 20))
     
     # Create the countplot with y as the 'dba' and x as the count
-    countplot = sns.countplot(data=data, y='dba', order=data['dba'].value_counts().iloc[:top_n].index)
+    countplot = sns.countplot(data=data, y='dba', color = 'b', order=data['dba'].value_counts().iloc[:top_n].index)
     
     # Increase the font size for the title and y-axis labels
     countplot.set_yticklabels(countplot.get_yticklabels(), fontsize=25)  # Adjust the fontsize as needed
@@ -136,7 +136,7 @@ def visual_2(data):
     plt.figure(figsize=(36, 20))
     
     # Create the countplot with y as the 'dba' and x as the count
-    countplot = sns.countplot(data, y='cuisine_description', order=data['cuisine_description'].value_counts().iloc[:top_n].index)
+    countplot = sns.countplot(data, y='cuisine_description', color = 'b', order=data['cuisine_description'].value_counts().iloc[:top_n].index)
     
     # Increase the font size for the title and y-axis labels
     countplot.set_yticklabels(countplot.get_yticklabels(), fontsize=25)  # Adjust the fontsize as needed
@@ -167,10 +167,14 @@ def visual_3(data):
     # assign he top 20 businesses by largest score
     top_20_scores = filtered_data.nlargest(20, 'score')
 
+    # Custom Color
+    custom_palette = ["black", "red"]
+
+    
     # barplot visual
     sns.set(font_scale=1.5, style="white")
     plt.figure(figsize=(10, 6))  # Adjust the figure size as needed
-    sns.barplot(data=top_20_scores, x='boro', y='score', hue='action', color='red', ci=False)
+    sns.barplot(data=top_20_scores, x='boro', y='score', hue='action', ci=False, palette=custom_palette)
     plt.xlabel('')
     plt.ylabel('Score')
     plt.title('Bar Plot of Top 20 Scores by Borough')
@@ -206,9 +210,9 @@ def visual_4(data):
     
     # Specify the order and palette for 'action' categories
     hue_order = ['Closed', 'Violations cited', 'Re-opened', 'No violations']  # Specify your category names
-    sns.scatterplot(data=data, x='score', y='inspection_date', hue='action', hue_order=hue_order, palette=custom_palette)
-    plt.xlabel('Score', labelpad=20)
-    plt.ylabel('Years')
+    sns.scatterplot(data=data, x='inspection_date', y='score', hue='action', hue_order=hue_order, palette=custom_palette)
+    plt.xlabel('Years', labelpad=20)
+    plt.ylabel('Score')
     plt.title('Health Inspection Scores and Action over time')
     plt.show()
 
