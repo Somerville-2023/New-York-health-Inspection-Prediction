@@ -19,8 +19,7 @@
   <img src="https://www.wsav.com/wp-content/uploads/sites/75/2022/12/Food-inspection.jpg?w=612" width="750" alt="Image">
 </p>
 
-### Predict the monthly closing price for Tesla company stock based on 3 years of recorded data from Alpha Vantage API.  
-##### ***note: Tesla stock is typically volatile, more than three times as volatile as the S&P 500 in recent months.***
+### Predict NYC Health Inspection Scores for restaturants based on 10 years of recorded data from Open Data via Socrata API.  
 
 ### Project Description
 
@@ -34,11 +33,11 @@ In today's culinary landscape, making informed decisions about dining out is cha
 
 ### Initial Thoughts
 
-My initial hypothesis is that drivers of Health Inspection scores will be the boros and reviews text data.
+My initial hypothesis is that drivers of health inspection scores will be boroughs and reviews text data.
 
 ## The Plan
 
-* Acquire historical Health Inspection data via Socrata API from the Open Data Website.
+* Acquire historical Health Inspection data via Socrata API from the Open Data Website and Google Reviews from Google Maps.
 * Prepare data
 * Explore data in search of drivers of Health Inspection Scores
   * Answer the following initial questions
