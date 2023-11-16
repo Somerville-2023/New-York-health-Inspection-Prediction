@@ -41,15 +41,14 @@ My initial hypothesis is that drivers of health inspection scores will be boroug
 * Prepare data
 * Explore data in search of drivers of Health Inspection Scores
   * Answer the following initial questions
-<!-- * Does TSLA stock volume have a correlation with it's daily closing price? 
-  	* Is there a significant relationship between the month in which TSLA stock was traded and its closing price?
- 	 * Does TSLA daily high stock price have a correlation with open stock price?  
- 	 * Is there a significant correlation between the month in which TSLA stock was traded and its closing price?
-* Develop a Model to predict Tesla stock closing price
-  * Use drivers identified in explore to help build predictive models of different types
-  * Feature engineer data if able, no preprocess to include all values.
+     * What are the top 20 businesses in the NY Health Inspections dataset? 
+     * What were the top 20 cuisine descriptions listed on inspections?
+     * Based on the Top 20 failing business for the Bronx and Queens, is there a significant difference between the Bronx and Queens in terms of scores received and results ending with a citation or close actions?  
+     * Is there a correlation between health inspection scores and health inspection dates over time?
+* Develop a Model to predict Health Inspection Scores
+  * Use drivers identified in exploration to help build predictive models of different types
   * Evaluate models on train and validate data
-  * Select the best model based on $RMSE$ and $R^2$
+  * Select the best model based on Accuracy Score
   * Evaluate the best model on test data
 * Draw conclusions
 
@@ -57,83 +56,86 @@ My initial hypothesis is that drivers of health inspection scores will be boroug
 
 | **Feature**        | **Data Type** | **Definition**                                       |
 |--------------------|---------------|-----------------------------------------------------|
-| `tsla_open`        | Float         | The opening stock price of TSLA on a given date.    |
-| `tsla_high`        | Float         | The highest stock price of TSLA during the day.    |
-| `tsla_low`         | Float         | The lowest stock price of TSLA during the day.     |
-| `tsla_close`       | Float         | The closing stock price of TSLA on a given date.    |
-| `tsla_volume`      | Integer       | The volume of TSLA shares traded on that date.     |
-| `month`            | String        | The month when the stock data was recorded.         |
-| `day_of_week`      | String        | The day of the week when the stock data was recorded.|
-| `year`             | Integer       | The year when the stock data was recorded.         |
-| `next_month_close` | Float         | **(Target Variable)** The closing stock price of TSLA in the following month.|
+| `compound`        | Float         | aggregated score of positive, neutral and negative score of reviews    |
+| `positive`        | Float         | positive score of google reviews.    |
+| `neutral`        | Float         | neutral score of google reviews.    |
+| `negative`         | Float         | negative score of google reviews.     |
+| `reviews`       | Float         | lemmatized text data from google reviews    |
+| `avg_price`      | Integer       | average price google review rating     |
+| `avg_food`            | String        | average food google review rating         |
+| `avg_atmosphere`      | String        | average atmosphere google review rating       |
+| `avg_service`             | Integer       | average service google review rating.         |
+| `grade` | Float         | **(Target Variable)** Health Inspection score grade (pass and **fail**)|
 
 
 ## Steps to Reproduce
 
 1. Clone this project repository to your local machine.
 
-2. Install project dependencies by running pip install -r requirements.txt in your project directory.
+2. You need to pip install Selenium and Tor and follow instruction on set-up within scraper_gmaps folder in repository. (You may download using homebrew if installed)
 
-3. Obtain an API key from the Alpha Vantage website.
+4. Install project dependencies by running pip install -r requirements.txt in your project directory.
+	
+5. Obtain an API key and API Token from the Socrata website.
 
-4. Create a config.py file in your project directory with your API key using the following format:
+6. Create a config.py file in your project directory with your API key using the following format:
 
-> ALPHA_VANTAGE_API_KEY = "YOUR_API_KEY"
+> API_KEY = "YOUR_API_KEY"
+> API_TOKEN = "YOUR_API_TOKEN"
  
-5. Ensure that config.py is added to your .gitignore file to protect your API key.
+6. Ensure that config.py is added to your .gitignore file to protect your API key.
 
-6. Run the acquire.py script to fetch stock data from the Alpha Vantage API:
+7. Run the acquire.py script to fetch Health Inspection data from the Alpha Vantage API:
 
 > python acquire.py
 
-7. Execute the prepare.py script for data preprocessing and splitting:
+8. Execute the prepare.py script for data preprocessing and splitting:
 
 > python prepare.py
 
-8. Explore the dataset and answer initial questions using the explore.py script:
+9. Explore the dataset and answer initial questions using the explore.py script:
 
 > python explore.py
 
-9. Develop machine learning models by running the model.py script:
+10. Develop machine learning models by running the model.py script:
 
 > python model.py
 
-10. Evaluate the models, select the best-performing one, and draw conclusions based on the results of the model.py script.
+11. Evaluate the models, select the best-performing one, and draw conclusions based on the results of the model.py script.
 
 
 # Conclusion
 
 ## Takeaways and Key Findings
 
-- Company stocks with low volatility or are considered stable would not benefit from regression modeling.
-- Company stocks with high volatility need to be analyzed over a shorter amount of time versus the span of twenty plus years.
-- It's easier to analyze data when there is ups and downs on the stock you are trying to predict closing price.
-- Tesla's stock is not easy to predict accurately and it goes the same for other volatile stocks explored during the exploration phase outside of the data science project.
+- **Dunkin Donuts are among the highest counted businesses with health inspections.**  
+- **In cuisine-description for New York is mostly composed of "American". There are descriptions without a clear unique description which may make this feature weak.**  
+- **There is no significant difference between the top 20 businesses with high (failing scores) that were associated with a closed or violation cited action**  
+- **There is a statistical correlation between health inspection scores and dates.**
+- **Google review text counts for certain words are overrepresented and underrepresented for fail and pas. For example ramen, crepe and crab are underrepresented for failing inspections and words like Doughnut, Pastrami, and subway are overrepresented in passing inspections.**
+- **Sentiment analysis proved it can accurately capture sentiment if reviews were long reviews with more text, versus short reviews, slang words were unable to be captured during this analysis. Manhattan had highest sentiment score on average and had one of the lower violation score on average showing a clear correlation that if you open a restaurant in manhattan ensure you are passing, becuase people will leave meaningful reviews.**
+- ** The data was heavily imbalanced when we highlighted and split our target variable within the distribution.**
 
 
 ## Model Improvement
-- The model does well with default setting and hyperparameter tuning may or may not aid in regression modeling efforts.
+- The XGBclassifier model did well with balancing data. Model could be improved with a larger dataset and rich text data in feature space.
 
 ## Recommendations and Next Steps
 
-- I would recommend maybe gaining sentiment data, user data, and other forms of unstructured data that can be used with deep learning methodoligies may help in predicting certain pricing elements for high volatile company stocks. Additionally I would also detail time frames to adjust for open and closed time frames of the stock market for optimal opportunity in price predictions.
+- I would recommend maybe gaining additional sentiment data, and other forms of unstructured data that can be used with deep learning methodoligies which may help in improved accuracy as well as model classification report metrics like precision, recall, and f1 score to produce a robust model with statistical support in predictive analysis.
 
 - Given more time, the following actions could be considered:
-  - Gather more data to improve model performance.
+  - Web scrape more data to improve model performance.
   - Revisit the data exploration phase to gain a more comprehensive dataset.
-    - Time Series Analysis would have been my alternate route in predicting closing prices.
-      - Utilizing Time series models like:
-        - ARIMA (AutoRegressive Integrated Moving Average)
-          - or more advanced techniques like LSTM (Long Short-Term Memory) and FBProphet are designed specifically for time-dependent data like stock prices.
-
-
->  In this individual project, I leveraged data science techniques to create a robust and versatile financial analysis and prediction tool. The primary goal was to develop a comprehensive solution for analyzing historical stock market data, making predictions, and evaluating the performance of different machine learning models. -->
+    - Improve sentiment Analysis in order to have better float values in model feature space that account for slang and other important nunaces in google reviews data.
+      - Utilizing classification/Regression models and tune hyperparameters like:
+        - Logisitic regression
+        - Random Forest
 
 
 
 
-
-## Questions to answer
+<!-- ## Questions to answer
 
 Can we predict whether or not a restaurant will fail inspection?
 
@@ -159,7 +161,7 @@ We will be looking at all current restaurants in New York City.
 
 We will be sourcing data from Yelp, Google places API, City of New york open data, US cencus bureau. 
 
-We will be doing a superfilcail analysis of multiple cities to correlate ratings and demographics.
+We will be doing a superfilcail analysis of multiple cities to correlate ratings and demographics. -->
 
 
 ### [Daily Standup Document](https://docs.google.com/document/d/10oYE42-RaEuOSvOpb1OFBhJRB8KRiCj7kR0OBwPf1r4/edit?usp=sharing)
