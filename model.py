@@ -1,3 +1,9 @@
+#Hush warning/note messages
+import warnings
+from sklearn.exceptions import UndefinedMetricWarning
+warnings.filterwarnings("ignore", category=UndefinedMetricWarning)
+
+
 #imported libs
 import acquire as a
 import prepare as p
@@ -174,71 +180,71 @@ def model_1():
 
 
 
-# knn regressor function
+# # knn regressor function
 
-# ===========================================================================================================================================
+# # ===========================================================================================================================================
 
-def model_2():
+# def model_2():
 
-    ny_reviews = pd.read_csv('ny_reviews_sentiment_ratings.csv', index_col=0)
-    grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
+#     ny_reviews = pd.read_csv('ny_reviews_sentiment_ratings.csv', index_col=0)
+#     grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
 
-    ny_reviews = ny_reviews.rename(columns={'neg' : 'negative',
-                                            'neu' : 'neutral',
-                                            'pos' : 'positive',})
+#     ny_reviews = ny_reviews.rename(columns={'neg' : 'negative',
+#                                             'neu' : 'neutral',
+#                                             'pos' : 'positive',})
 
-    ny_reviews = ny_reviews[['grade', 'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']]
+#     ny_reviews = ny_reviews[['grade', 'avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'reviews', 'negative', 'neutral', 'positive', 'compound']]
     
-    # Load and preprocess your data
-    ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
+#     # Load and preprocess your data
+#     ny_reviews['grade'] = ny_reviews['grade'].map(grademap)
 
-    X = ny_reviews.drop(columns=["grade"])  # Features
-    y = ny_reviews["grade"]  # Target labels
+#     X = ny_reviews.drop(columns=["grade"])  # Features
+#     y = ny_reviews["grade"]  # Target labels
 
-    # Split the data into training, validation, and test sets
-    X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7, random_state=42)
-    X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
+#     # Split the data into training, validation, and test sets
+#     X_train, X_temp, y_train, y_temp = train_test_split(X, y, train_size=0.7, random_state=42)
+#     X_val, X_test, y_val, y_test = train_test_split(X_temp, y_temp, test_size=0.5, random_state=42)
 
-    tfidf = TfidfVectorizer()
-    X_train_reviews_tfidf = tfidf.fit_transform(X_train["reviews"])
-    X_val_reviews_tfidf = tfidf.transform(X_val["reviews"])
-    X_test_reviews_tfidf = tfidf.transform(X_test["reviews"])
+#     tfidf = TfidfVectorizer()
+#     X_train_reviews_tfidf = tfidf.fit_transform(X_train["reviews"])
+#     X_val_reviews_tfidf = tfidf.transform(X_val["reviews"])
+#     X_test_reviews_tfidf = tfidf.transform(X_test["reviews"])
 
-    # Combine TF-IDF vectors with sentiment features
-    X_train = hstack([X_train_reviews_tfidf, X_train[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
-    X_val = hstack([X_val_reviews_tfidf, X_val[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
-    X_test = hstack([X_test_reviews_tfidf, X_test[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+#     # Combine TF-IDF vectors with sentiment features
+#     X_train = hstack([X_train_reviews_tfidf, X_train[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+#     X_val = hstack([X_val_reviews_tfidf, X_val[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
+#     X_test = hstack([X_test_reviews_tfidf, X_test[['avg_service', 'avg_atmosphere', 'avg_food', 'avg_price', 'negative', 'neutral', 'positive', 'compound']].values])
 
-    # Train KNN Model
-    knn = KNeighborsClassifier(
-    n_neighbors=2,  
-    weights='distance',  # distance
-    p=2,  # Euclidean distance
-    algorithm='auto',  # 'ball_tree', 'kd_tree', or 'brute'
-    leaf_size=30,  
-    metric='euclidean'  # You can choose other metrics or provide custom ones
-    )
-    knn.fit(X_train, y_train)
+#     # Train KNN Model
+#     knn = KNeighborsClassifier(
+#     n_neighbors=2,  
+#     weights='distance',  # distance
+#     p=2,  # Euclidean distance
+#     algorithm='auto',  # 'ball_tree', 'kd_tree', or 'brute'
+#     leaf_size=30,  
+#     metric='euclidean'  # You can choose other metrics or provide custom ones
+#     )
+#     knn.fit(X_train, y_train)
 
-    # Calculate accuracy scores
-    y_train_res = pd.DataFrame({'actual': y_train, 'preds': knn.predict(X_train)})
-    y_val_res = pd.DataFrame({'actual': y_val, 'preds': knn.predict(X_val)})
+#     # Calculate accuracy scores
+#     y_train_res = pd.DataFrame({'actual': y_train, 'preds': knn.predict(X_train)})
+#     y_val_res = pd.DataFrame({'actual': y_val, 'preds': knn.predict(X_val)})
 
-    y_train_pred = knn.predict(X_train)
-    y_val_pred = knn.predict(X_val)
+#     y_train_pred = knn.predict(X_train)
+#     y_val_pred = knn.predict(X_val)
     
-    train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
-    val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
+#     train_accuracy = accuracy_score(y_train_res['actual'], y_train_res['preds'])
+#     val_accuracy = accuracy_score(y_val_res['actual'], y_val_res['preds'])
     
-    train_classification_report = class_rep(y_train, y_train_pred)
-    val_classification_report = class_rep(y_val, y_val_pred)
+#     train_classification_report = class_rep(y_train, y_train_pred)
+#     val_classification_report = class_rep(y_val, y_val_pred)
 
-    print(f'\nKNearest Neighbors (Hyperparameters Used)')
-    print(f'==================================================')
-    print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
-    print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
-    print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n\n\n')
-    print(f'\nClassification Report for Validation Set:\n\n{val_classification_report}\n')
+#     print(f'\nKNearest Neighbors (Hyperparameters Used)')
+#     print(f'==================================================')
+#     print(f'\nTrain Accuracy: {train_accuracy:.2f}\n')
+#     print(f'\nValidation Accuracy: {val_accuracy:.2f}\n')
+#     print(f'\nClassification Report for Training Set:\n\n{train_classification_report}\n\n\n')
+#     print(f'\nClassification Report for Validation Set:\n\n{val_classification_report}\n')
 
 
 
@@ -248,7 +254,7 @@ def model_2():
 
 target_names = ['Fail', 'Pass']
 
-def model_3():
+def model_2():
     # Load and preprocess your data
     ny_reviews = pd.read_csv('ny_reviews_sentiment_ratings.csv', index_col=0)
     grademap = {'A': 'Pass', 'B': 'Pass', 'C': 'Fail'}
@@ -330,7 +336,7 @@ def model_3():
 
 # ===========================================================================================================================================
 
-def model_4():
+def model_3():
     
     grademap = {'A': 'Pass', 'B': 'Fail', 'C': 'Fail'}
 
@@ -403,7 +409,7 @@ def model_4():
 
 from sklearn.ensemble import RandomForestClassifier
 
-def model_5():
+def model_4():
     grademap = {'A': 'Pass', 'B': 'Fail', 'C': 'Fail'}
 
     # Load and preprocess your data
