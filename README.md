@@ -114,7 +114,7 @@ My initial hypothesis is that drivers of health inspection scores will be boroug
 - **There is a statistical correlation between health inspection scores and dates.**
 - **Google review text counts for certain words are overrepresented and underrepresented for fail and pas. For example ramen, crepe and crab are underrepresented for failing inspections and words like Doughnut, Pastrami, and subway are overrepresented in passing inspections.**
 - **Sentiment analysis proved it can accurately capture sentiment if reviews were long reviews with more text, versus short reviews, slang words were unable to be captured during this analysis. Manhattan had highest sentiment score on average and had one of the lower violation score on average showing a clear correlation that if you open a restaurant in manhattan ensure you are passing, becuase people will leave meaningful reviews.**
-- ** The data was heavily imbalanced when we highlighted and split our target variable within the distribution.**
+- ** The data was heavily imbalanced when we highlighted and split our target variable**
 
 
 ## Model Improvement
