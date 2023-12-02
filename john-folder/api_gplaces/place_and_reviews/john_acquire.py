@@ -4,65 +4,53 @@ import os
 import requests
 import env
 
-def get_health_inspection_data(year, app_token, max_observations=None):
-    # Define the base API URL for health inspection data
+def check_and_load_csv(start_year, end_year):
+    filename = f'nyc_health_inspections_{start_year}_to_{end_year}.csv' if start_year != end_year else f'nyc_health_inspections_{start_year}.csv'
+    if os.path.isfile(filename):
+        print(f"CSV file for {start_year} to {end_year} already exists. Loading data from the CSV.")
+        return pd.read_csv(filename)
+    return None
+
+def make_api_request(start_year, end_year, app_token, offset, page_size):
     base_url = 'https://data.cityofnewyork.us/resource/43nn-pn8j.json'
+    url = f'{base_url}?$where=inspection_date between "{start_year}-01-01T00:00:00.000" and "{end_year}-12-31T23:59:59.999"&$$app_token={app_token}&$offset={offset}&$limit={page_size}'
+    response = requests.get(url)
+    if response.status_code != 200:
+        raise Exception(f"Failed to retrieve data. Status code: {response.status_code}")
+    return response.json()
 
-    # Check if a CSV file with the specified year already exists
-    csv_filename = f'nyc_health_inspections_{year}.csv'
-    if os.path.isfile(csv_filename):
-        print(f"CSV file for {year} already exists. Loading data from the CSV.")
-        df = pd.read_csv(csv_filename)
-        return df
-
-    # Initialize an empty list to store all data
-    all_data = []
-
-    # Set the initial offset to 0 and the page size to 1000
+def process_data(start_year, end_year, app_token, max_observations=None):
     offset = 0
     page_size = 1000
-
+    all_data = []
+    
     while max_observations is None or len(all_data) < max_observations:
-        # Calculate the remaining observations to retrieve
         remaining_observations = max_observations - len(all_data) if max_observations is not None else page_size
-
-        # Calculate the actual page size for this request
         actual_page_size = min(page_size, remaining_observations)
-
-        # Construct the URL with the app token, date filter, offset, and page size
-        url = f'{base_url}?$where=inspection_date between "{year}-01-01T00:00:00.000" and "{year}-12-31T23:59:59.999"&$$app_token={app_token}&$offset={offset}&$limit={actual_page_size}'
-
-        # Send an HTTP GET request to the API
-        response = requests.get(url)
-
-        # Check if the request was successful
-        if response.status_code == 200:
-            data = response.json()  # Convert JSON response to Python data
-            if len(data) == 0:
-                break  # No more data, exit the loop
-            all_data.extend(data)  # Add the data to the list
-            offset += actual_page_size  # Increment the offset for the next request
-        else:
-            print(f"Failed to retrieve health inspection data for {year}. Status code: {response.status_code}")
-            return None  # Exit the function with None if data retrieval fails
-
+        data = make_api_request(start_year, end_year, app_token, offset, actual_page_size)
+        if not data:
+            break
+        all_data.extend(data)
+        offset += actual_page_size
         if max_observations is not None and len(all_data) >= max_observations:
-            break  # Stop if the maximum number of observations has been reached
+            break
 
-    # Create a DataFrame using pandas
-    df = pd.DataFrame(all_data)
+    return pd.DataFrame(all_data)
 
-    # Save the DataFrame to a CSV file for easy access
+def get_health_inspection_data(start_year, end_year, app_token, max_observations=None):
+    if end_year < start_year:
+        raise ValueError("End year must be greater than or equal to start year")
+
+    df = check_and_load_csv(start_year, end_year)
+    if df is not None:
+        return df
+
+    df = process_data(start_year, end_year, app_token, max_observations)
+    csv_filename = f'nyc_health_inspections_{start_year}_to_{end_year}.csv' if start_year != end_year else f'nyc_health_inspections_{start_year}.csv'
     df.to_csv(csv_filename, index=False)
-
-    print(f"Health inspection data for {year} retrieved and saved to {csv_filename}.")
-
+    print(f"Health inspection data from {start_year} to {end_year} retrieved and saved to {csv_filename}.")
+    
     return df
-
-
-import pandas as pd
-import json
-import requests
 
 
 def construct_text_query(row):
