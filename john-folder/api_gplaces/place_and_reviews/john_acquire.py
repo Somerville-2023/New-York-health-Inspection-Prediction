@@ -4,6 +4,10 @@ import os
 import requests
 import env
 
+# ----------------------------------------------------------------------------------------------------------
+#                                        NYC Open Data API
+# __________________________________________________________________________________________________________
+
 def check_and_load_csv(start_year, end_year):
     filename = f'nyc_health_inspections_{start_year}_to_{end_year}.csv' if start_year != end_year else f'nyc_health_inspections_{start_year}.csv'
     if os.path.isfile(filename):
@@ -52,6 +56,9 @@ def get_health_inspection_data(start_year, end_year, app_token, max_observations
     
     return df
 
+# ----------------------------------------------------------------------------------------------------------
+#                                        Google Reviews API 
+# __________________________________________________________________________________________________________
 
 def construct_text_query(row):
     text_query = f"{row['dba']} {row['full_address']} {row['boro']}"
