@@ -53,6 +53,15 @@ def format_date(df):
     df['inspection_date'] = pd.to_datetime(df['inspection_date']).dt.strftime('%Y-%m-%d')
     return df
 
+def set_score(df):
+    # Find the maximum score per inspection
+    max_scores = df.groupby(['camis', 'inspection_date'])['score'].transform('max')
+
+    # Update the 'score' column with the maximum score for each inspection
+    df['score'] = max_scores
+    
+    return df
+
 def prepare_data(filepath):
     """Prepare data using the pipeline."""
     df = load_csv(filepath)
@@ -65,4 +74,6 @@ def prepare_data(filepath):
     df = format_phone(df)
     df = convert_cols(df, ['zipcode', 'community_board', 'council_district', 'census_tract', 'bin', 'bbl'])
     df = format_date(df)
+    df = set_score(df)
+    df.drop_duplicates(inplace=True)
     return df
