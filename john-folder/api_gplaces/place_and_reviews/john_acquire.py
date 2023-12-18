@@ -2,57 +2,122 @@ import pandas as pd
 import os
 import requests
 
-# ----------------------------------------------------------------------------------------------------------
-#                                        NYC Open Data API
-# __________________________________________________________________________________________________________
+from datetime import datetime
 
-def check_and_load_csv(start_year, end_year):
-    filename = f'nyc_health_inspections_{start_year}_to_{end_year}.csv' if start_year != end_year else f'nyc_health_inspections_{start_year}.csv'
-    if os.path.isfile(filename):
-        print(f"CSV file for {start_year} to {end_year} already exists. Loading data from the CSV.")
-        return pd.read_csv(filename)
-    return None
+CSV_FILENAME = "health_inspections.csv"
 
-def make_api_request(start_year, end_year, app_token, offset, page_size):
+def read_existing_csv():
+    """
+    Reads the existing CSV file and returns the dataframe along with the oldest inspection date.
+    If the file doesn't exist, returns an empty dataframe and a None date.
+    """
+    if os.path.isfile(CSV_FILENAME):
+        df = pd.read_csv(CSV_FILENAME)
+        # Convert 'inspection_date' to datetime for accurate comparison
+        df['inspection_date'] = pd.to_datetime(df['inspection_date'])
+        oldest_date = df['inspection_date'].min()
+        return df, oldest_date
+    return pd.DataFrame(), None
+
+def make_api_request(start_date, app_token, offset, page_size):
+    """
+    Makes an API request to fetch health inspection data from the specified start date.
+    Returns the data as a list of dictionaries.
+    """
     base_url = 'https://data.cityofnewyork.us/resource/43nn-pn8j.json'
-    url = f'{base_url}?$where=inspection_date between "{start_year}-01-01T00:00:00.000" and "{end_year}-12-31T23:59:59.999"&$$app_token={app_token}&$offset={offset}&$limit={page_size}'
-    response = requests.get(url)
-    if response.status_code != 200:
-        raise Exception(f"Failed to retrieve data. Status code: {response.status_code}")
+    query = f'inspection_date >= "{start_date.strftime("%Y-%m-%dT%H:%M:%S.%f")}"' if start_date else '1=1'
+    url = f'{base_url}?$where={query}&$$app_token={app_token}&$offset={offset}&$limit={page_size}'
+    
+    try:
+        response = requests.get(url)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        raise SystemExit(f"API request failed: {e}")
+    
     return response.json()
 
-def process_data(start_year, end_year, app_token, max_observations=None):
+def append_and_save_data(existing_df, new_data):
+    """
+    Appends new data to the existing dataframe, removes duplicates, and saves to the CSV file.
+    """
+    df_new = pd.DataFrame(new_data)
+    # Ensure the 'inspection_date' in new data is also converted to datetime
+    df_new['inspection_date'] = pd.to_datetime(df_new['inspection_date'])
+    df_combined = pd.concat([existing_df, df_new]).drop_duplicates().reset_index(drop=True)
+    df_combined.to_csv(CSV_FILENAME, index=False)
+    return df_combined
+
+def download_inspection_data(app_token):
+    """
+    Downloads health inspection data, updates or creates a CSV file named 'health_inspections.csv',
+    and returns the combined dataframe.
+    """
+    df_existing, oldest_date = read_existing_csv()
+
     offset = 0
     page_size = 1000
-    all_data = []
-    
-    while max_observations is None or len(all_data) < max_observations:
-        remaining_observations = max_observations - len(all_data) if max_observations is not None else page_size
-        actual_page_size = min(page_size, remaining_observations)
-        data = make_api_request(start_year, end_year, app_token, offset, actual_page_size)
+    while True:
+        data = make_api_request(oldest_date, app_token, offset, page_size)
         if not data:
             break
-        all_data.extend(data)
-        offset += actual_page_size
-        if max_observations is not None and len(all_data) >= max_observations:
-            break
 
-    return pd.DataFrame(all_data)
+        df_existing = append_and_save_data(df_existing, data)
+        offset += len(data)
 
-def get_health_inspection_data(start_year, end_year, app_token, max_observations=None):
-    if end_year < start_year:
-        raise ValueError("End year must be greater than or equal to start year")
+    return df_existing
 
-    df = check_and_load_csv(start_year, end_year)
-    if df is not None:
-        return df
+#
+# # ----------------------------------------------------------------------------------------------------------
+# #                                        NYC Open Data API
+# # __________________________________________________________________________________________________________
 
-    df = process_data(start_year, end_year, app_token, max_observations)
-    csv_filename = f'nyc_health_inspections_{start_year}_to_{end_year}.csv' if start_year != end_year else f'nyc_health_inspections_{start_year}.csv'
-    df.to_csv(csv_filename, index=False)
-    print(f"Health inspection data from {start_year} to {end_year} retrieved and saved to {csv_filename}.")
+# def check_and_load_csv(start_year, end_year):
+#     filename = f'nyc_health_inspections_{start_year}_to_{end_year}.csv' if start_year != end_year else f'nyc_health_inspections_{start_year}.csv'
+#     if os.path.isfile(filename):
+#         print(f"CSV file for {start_year} to {end_year} already exists. Loading data from the CSV.")
+#         return pd.read_csv(filename)
+#     return None
+
+# def make_api_request(start_year, end_year, app_token, offset, page_size):
+#     base_url = 'https://data.cityofnewyork.us/resource/43nn-pn8j.json'
+#     url = f'{base_url}?$where=inspection_date between "{start_year}-01-01T00:00:00.000" and "{end_year}-12-31T23:59:59.999"&$$app_token={app_token}&$offset={offset}&$limit={page_size}'
+#     response = requests.get(url)
+#     if response.status_code != 200:
+#         raise Exception(f"Failed to retrieve data. Status code: {response.status_code}")
+#     return response.json()
+
+# def process_data(start_year, end_year, app_token, max_observations=None):
+#     offset = 0
+#     page_size = 1000
+#     all_data = []
     
-    return df
+#     while max_observations is None or len(all_data) < max_observations:
+#         remaining_observations = max_observations - len(all_data) if max_observations is not None else page_size
+#         actual_page_size = min(page_size, remaining_observations)
+#         data = make_api_request(start_year, end_year, app_token, offset, actual_page_size)
+#         if not data:
+#             break
+#         all_data.extend(data)
+#         offset += actual_page_size
+#         if max_observations is not None and len(all_data) >= max_observations:
+#             break
+
+#     return pd.DataFrame(all_data)
+
+# def get_health_inspection_data(start_year, end_year, app_token, max_observations=None):
+#     if end_year < start_year:
+#         raise ValueError("End year must be greater than or equal to start year")
+
+#     df = check_and_load_csv(start_year, end_year)
+#     if df is not None:
+#         return df
+
+#     df = process_data(start_year, end_year, app_token, max_observations)
+#     csv_filename = f'nyc_health_inspections_{start_year}_to_{end_year}.csv' if start_year != end_year else f'nyc_health_inspections_{start_year}.csv'
+#     df.to_csv(csv_filename, index=False)
+#     print(f"Health inspection data from {start_year} to {end_year} retrieved and saved to {csv_filename}.")
+    
+#     return df
 
 # ----------------------------------------------------------------------------------------------------------
 #                                        Google Reviews API 

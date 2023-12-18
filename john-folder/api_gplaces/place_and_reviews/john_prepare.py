@@ -14,6 +14,15 @@ def drop_nulls(df, columns):
     df.dropna(subset=columns, inplace=True)
     return df
 
+def drop_upcoming(df):
+    # Filter out rows with 'inspection_date' as '1900-01-01'
+    df = df[df['inspection_date'] != '1900-01-01']
+
+    # Reset the index to ensure continuous index values
+    df.reset_index(drop=True, inplace=True)
+    
+    return df
+
 def filter_types(df, types):
     """Filter out specific inspection types."""
     df = df[~df['inspection_type'].str.startswith(tuple(types))]
@@ -62,11 +71,14 @@ def set_score(df):
     
     return df
 
+
+
 def prepare_data(filepath):
     """Prepare data using the pipeline."""
     df = load_csv(filepath)
     df = drop_cols(df, ['grade', 'grade_date'])
     df = drop_nulls(df, ['bin', 'council_district'])
+    df = drop_upcoming(df)
     df = filter_types(df, ["Calorie Posting", "Pre-permit", "Smoke-Free Air Act", "Trans Fat", "Administrative"])
     df = infer_violations(df)
     df = remove_violations(df)
